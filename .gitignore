@@ -1,0 +1,53 @@
+# Dependencias
+node_modules/
+.pnp
+.pnp.js
+
+# Build
+.next/
+out/
+dist/
+build/
+
+# Entorno — NUNCA en el repo
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# Cobertura
+coverage/
+.nyc_output/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+Thumbs.db
+
+# Drizzle
+drizzle/meta/
+
+# Playwright
+test-results/
+playwright-report/
+
+# Archivos locales de almacenamiento (en producción van en el volumen de Docker)
+storage/
+
+# Backups locales
+backups/
+
+# Tipos generados por Next.js
+next-env.d.ts
+.claude

@@ -1,0 +1,110 @@
+name: agora-dev
+
+services:
+  migrate:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+      target: migrator
+    env_file: ../.env
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+    restart: "no"
+
+  web:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    ports:
+      - "3001:3000"
+    env_file: ../.env
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - internal
+    restart: unless-stopped
+    volumes:
+      - storage:/var/agora/storage
+
+  db:
+    image: postgres:18-alpine
+    env_file: ../.env
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: agora
+      POSTGRES_USER: postgres
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    volumes:
+      - db_data:/var/lib/postgresql
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - internal
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d agora"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  pdf:
+    build:
+      context: ..
+      dockerfile: worker/Dockerfile
+    env_file: ../.env
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - internal
+    restart: unless-stopped
+    volumes:
+      - storage:/var/agora/storage
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    networks:
+      - internal
+    restart: unless-stopped
+
+  backup:
+    build:
+      context: backup
+      dockerfile: Dockerfile
+    init: true
+    env_file: ../.env
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+    volumes:
+      - backups:/backups
+    environment:
+      PGHOST: db
+      PGPORT: 5432
+      PGDATABASE: agora
+      PGUSER: agora_backup
+      BACKUP_RETAIN_DAYS: 30
+
+networks:
+  internal:
+    driver: bridge
+    internal: false
+
+volumes:
+  db_data:
+  storage:
+  backups:
