@@ -1,0 +1,15 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model PrismaDemo {
+  id       String   @id @default(uuid()) @db.Uuid
+  nombre   String
+  creadoEn DateTime @default(now()) @map("creado_en")
+
+  @@map("prisma_demo")
+}
