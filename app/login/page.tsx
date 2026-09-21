@@ -3,6 +3,8 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import { FormularioLogin } from './formulario'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'Ingresar',
 }

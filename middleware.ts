@@ -4,24 +4,7 @@ import { eq } from 'drizzle-orm'
 import { auth } from '@/src/auth/config'
 import { db, conContextoRLS } from '@/src/datos/cliente'
 import { usuario as tablaUsuario } from '@/src/datos/esquema'
-
-const RUTAS_PUBLICAS = new Set([
-  '/',
-  '/inicio',
-  '/institucion',
-  '/modelo-clei',
-  '/oferta',
-  '/admisiones',
-  '/galeria',
-  '/blog',
-  '/aliados',
-  '/contacto',
-  '/privacidad',
-])
-
-const PREFIJOS_PUBLICOS = ['/blog/', '/galeria/', '/admisiones/']
-
-const RUTAS_SOLO_SIN_SESION = ['/login', '/recuperar-contrasena', '/registro']
+import { clasificarRuta } from '@/src/seguridad/rutas'
 
 const PREFIJOS_ROL: Array<[string, string[]]> = [
   ['/panel/admin', ['superadmin']],
@@ -74,25 +57,11 @@ export async function middleware(request: NextRequest) {
   const siguienteConNonce = () =>
     conCSP(NextResponse.next({ request: { headers: encabezadosConNonce } }), nonce)
 
-  if (
-    pathname.startsWith('/api/health') ||
-    pathname.startsWith('/api/verificar') ||
-    pathname.startsWith('/api/auth') ||
-    pathname.startsWith('/api/pdf/render') ||
-    pathname.startsWith('/api/galeria/imagen') ||
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/public')
-  ) {
-    return siguienteConNonce()
-  }
+  const tipo = clasificarRuta(pathname)
 
-  const esPublica =
-    RUTAS_PUBLICAS.has(pathname) ||
-    PREFIJOS_PUBLICOS.some((p) => pathname.startsWith(p))
+  if (tipo === 'publica') return siguienteConNonce()
 
-  if (esPublica) return siguienteConNonce()
-
-  const esSoloSinSesion = RUTAS_SOLO_SIN_SESION.includes(pathname)
+  const esSoloSinSesion = tipo === 'solo-sin-sesion'
 
   let sesion: Awaited<ReturnType<typeof auth.api.getSession>> | null = null
   try {

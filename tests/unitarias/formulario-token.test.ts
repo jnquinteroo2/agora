@@ -6,11 +6,14 @@ const T4s = new Date('2026-09-01T12:00:04.000Z')
 const T1s = new Date('2026-09-01T12:00:01.000Z')
 const T2h1m = new Date('2026-09-01T14:01:00.000Z')
 
-beforeEach(() => { vi.useFakeTimers() })
-afterEach(() => { vi.useRealTimers() })
+beforeEach(() => {
+  vi.useFakeTimers()
+})
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 describe('validarTokenFormulario()', () => {
-
   it('acepta token válido con tiempo suficiente', () => {
     vi.setSystemTime(T0)
     const token = crearTokenFormulario()
@@ -47,5 +50,4 @@ describe('validarTokenFormulario()', () => {
     vi.setSystemTime(T2h1m)
     expect(() => validarTokenFormulario(token)).toThrow('expiró')
   })
-
 })

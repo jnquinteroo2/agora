@@ -36,7 +36,11 @@ describe('contraseñaComprometida', () => {
   })
 
   it('falla abierto (permite la contraseña) si el servicio responde con error', async () => {
-    global.fetch = vi.fn(async () => ({ ok: false, status: 503, text: async () => '' })) as unknown as typeof fetch
+    global.fetch = vi.fn(async () => ({
+      ok: false,
+      status: 503,
+      text: async () => '',
+    })) as unknown as typeof fetch
 
     expect(await contraseñaComprometida('cualquiera')).toBe(false)
   })
@@ -59,7 +63,11 @@ describe('contraseñaComprometida', () => {
     await contraseñaComprometida('super-secreta-123')
 
     expect(urlSolicitada).not.toContain('super-secreta-123')
-    const prefijoEsperado = createHash('sha1').update('super-secreta-123', 'utf8').digest('hex').toUpperCase().slice(0, 5)
+    const prefijoEsperado = createHash('sha1')
+      .update('super-secreta-123', 'utf8')
+      .digest('hex')
+      .toUpperCase()
+      .slice(0, 5)
     expect(urlSolicitada).toContain(prefijoEsperado)
     expect(urlSolicitada).not.toContain(
       createHash('sha1').update('super-secreta-123', 'utf8').digest('hex').toUpperCase()

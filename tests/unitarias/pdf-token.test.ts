@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { crearTokenRenderPDF, validarTokenRenderPDF, type DatosTokenPDF } from '../../src/datos/pdf-token'
+import {
+  crearTokenRenderPDF,
+  validarTokenRenderPDF,
+  type DatosTokenPDF,
+} from '../../src/datos/pdf-token'
 
 const T0 = new Date('2026-09-01T12:00:00.000Z')
 const T4m = new Date('2026-09-01T12:04:00.000Z')
@@ -15,26 +19,40 @@ const BASE: DatosTokenPDF = {
   solicitante: SOLICITANTE_DOCENTE,
 }
 
-beforeEach(() => { vi.useFakeTimers() })
-afterEach(() => { vi.useRealTimers() })
+beforeEach(() => {
+  vi.useFakeTimers()
+})
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 describe('validarTokenRenderPDF()', () => {
-
   it('acepta un token válido dentro de la vigencia y devuelve la identidad firmada del solicitante', () => {
     vi.setSystemTime(T0)
     const token = crearTokenRenderPDF(BASE)
 
     vi.setSystemTime(T4m)
-    const solicitante = validarTokenRenderPDF(token, { tipo: BASE.tipo, entidadId: BASE.entidadId, periodoId: BASE.periodoId })
+    const solicitante = validarTokenRenderPDF(token, {
+      tipo: BASE.tipo,
+      entidadId: BASE.entidadId,
+      periodoId: BASE.periodoId,
+    })
     expect(solicitante).toEqual(SOLICITANTE_DOCENTE)
   })
 
   it('acepta un token sin periodo (documento que no lo requiere) cuando se valida igual sin periodo', () => {
     vi.setSystemTime(T0)
-    const token = crearTokenRenderPDF({ tipo: 'recibo_caja', entidadId: BASE.entidadId, solicitante: SOLICITANTE_SUPERADMIN })
+    const token = crearTokenRenderPDF({
+      tipo: 'recibo_caja',
+      entidadId: BASE.entidadId,
+      solicitante: SOLICITANTE_SUPERADMIN,
+    })
 
     vi.setSystemTime(T4m)
-    const solicitante = validarTokenRenderPDF(token, { tipo: 'recibo_caja', entidadId: BASE.entidadId })
+    const solicitante = validarTokenRenderPDF(token, {
+      tipo: 'recibo_caja',
+      entidadId: BASE.entidadId,
+    })
     expect(solicitante).toEqual(SOLICITANTE_SUPERADMIN)
   })
 
@@ -43,7 +61,13 @@ describe('validarTokenRenderPDF()', () => {
     const token = crearTokenRenderPDF(BASE)
 
     vi.setSystemTime(T6m)
-    expect(() => validarTokenRenderPDF(token, { tipo: BASE.tipo, entidadId: BASE.entidadId, periodoId: BASE.periodoId })).toThrow('expiró')
+    expect(() =>
+      validarTokenRenderPDF(token, {
+        tipo: BASE.tipo,
+        entidadId: BASE.entidadId,
+        periodoId: BASE.periodoId,
+      })
+    ).toThrow('expiró')
   })
 
   it('rechaza un token emitido para otra entidad, aunque no haya expirado', () => {
@@ -52,16 +76,26 @@ describe('validarTokenRenderPDF()', () => {
 
     vi.setSystemTime(T4m)
     expect(() =>
-      validarTokenRenderPDF(token, { tipo: BASE.tipo, entidadId: 'fedcba98-7654-3210-fedc-ba9876543210', periodoId: BASE.periodoId })
+      validarTokenRenderPDF(token, {
+        tipo: BASE.tipo,
+        entidadId: 'fedcba98-7654-3210-fedc-ba9876543210',
+        periodoId: BASE.periodoId,
+      })
     ).toThrow('no corresponde a este documento')
   })
 
   it('rechaza un token emitido para otro tipo de documento', () => {
     vi.setSystemTime(T0)
-    const token = crearTokenRenderPDF({ tipo: 'recibo_caja', entidadId: BASE.entidadId, solicitante: SOLICITANTE_SUPERADMIN })
+    const token = crearTokenRenderPDF({
+      tipo: 'recibo_caja',
+      entidadId: BASE.entidadId,
+      solicitante: SOLICITANTE_SUPERADMIN,
+    })
 
     vi.setSystemTime(T4m)
-    expect(() => validarTokenRenderPDF(token, { tipo: BASE.tipo, entidadId: BASE.entidadId })).toThrow('no corresponde a este documento')
+    expect(() =>
+      validarTokenRenderPDF(token, { tipo: BASE.tipo, entidadId: BASE.entidadId })
+    ).toThrow('no corresponde a este documento')
   })
 
   it('rechaza un token emitido para otro periodo del mismo estudiante', () => {
@@ -70,7 +104,11 @@ describe('validarTokenRenderPDF()', () => {
 
     vi.setSystemTime(T4m)
     expect(() =>
-      validarTokenRenderPDF(token, { tipo: BASE.tipo, entidadId: BASE.entidadId, periodoId: '22222222-2222-2222-2222-222222222222' })
+      validarTokenRenderPDF(token, {
+        tipo: BASE.tipo,
+        entidadId: BASE.entidadId,
+        periodoId: '22222222-2222-2222-2222-222222222222',
+      })
     ).toThrow('no corresponde a este periodo')
   })
 
@@ -81,12 +119,18 @@ describe('validarTokenRenderPDF()', () => {
 
     vi.setSystemTime(T4m)
     expect(() =>
-      validarTokenRenderPDF(alterado, { tipo: BASE.tipo, entidadId: BASE.entidadId, periodoId: BASE.periodoId })
+      validarTokenRenderPDF(alterado, {
+        tipo: BASE.tipo,
+        entidadId: BASE.entidadId,
+        periodoId: BASE.periodoId,
+      })
     ).toThrow('inválido')
   })
 
   it('rechaza un token sin separador', () => {
-    expect(() => validarTokenRenderPDF('sin-separador', { tipo: BASE.tipo, entidadId: BASE.entidadId })).toThrow('inválido')
+    expect(() =>
+      validarTokenRenderPDF('sin-separador', { tipo: BASE.tipo, entidadId: BASE.entidadId })
+    ).toThrow('inválido')
   })
 
   it('rechaza un token con un rol de solicitante desconocido (payload manipulado)', () => {
@@ -99,8 +143,11 @@ describe('validarTokenRenderPDF()', () => {
 
     vi.setSystemTime(T4m)
     expect(() =>
-      validarTokenRenderPDF(tokenFalso, { tipo: BASE.tipo, entidadId: BASE.entidadId, periodoId: BASE.periodoId })
+      validarTokenRenderPDF(tokenFalso, {
+        tipo: BASE.tipo,
+        entidadId: BASE.entidadId,
+        periodoId: BASE.periodoId,
+      })
     ).toThrow('inválido')
   })
-
 })

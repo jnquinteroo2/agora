@@ -1,54 +1,94 @@
+import { metadatosDePagina } from '@/src/seo/metadatos'
 import Link from 'next/link'
 import Image from 'next/image'
-import { and, desc, eq, isNull, lte, or } from 'drizzle-orm'
-import { db, conContextoRLS } from '@/src/datos/cliente'
-import { cmsEntrada } from '@/src/datos/esquema'
+import type { Route } from 'next'
+import { obtenerEntradas } from '@/src/datos/cms-publico'
+import { Contenedor } from '@/src/ui/contenedor'
+import { Seccion, EncabezadoDePagina } from '@/src/ui/seccion'
+import { Migas } from '@/src/ui/migas'
+import { EstadoVacio } from '@/src/ui/estado-vacio'
+import { fechaLarga, fechaMaquina } from '@/src/ui/fecha'
 
 export const dynamic = 'force-dynamic'
 
-
-export const metadata = { title: 'Noticias' }
+export const metadata = metadatosDePagina({
+  titulo: 'Noticias',
+  descripcion: 'Novedades de la institución: calendario, procesos de admisión y vida escolar.',
+  ruta: '/blog',
+})
 
 export default async function BlogPage() {
-  const entradas = await conContextoRLS(db, { usuarioId: '', rol: 'anonimo' }, async (tx) =>
-    tx
-      .select()
-      .from(cmsEntrada)
-      .where(
-        and(
-          eq(cmsEntrada.tipo, 'noticia'),
-          eq(cmsEntrada.estado, 'publicado'),
-          isNull(cmsEntrada.eliminadoEn),
-          or(isNull(cmsEntrada.publicarEn), lte(cmsEntrada.publicarEn, new Date()))
-        )
-      )
-      .orderBy(desc(cmsEntrada.creadoEn))
-  )
+  const entradas = await obtenerEntradas('noticia')
 
   return (
-    <div className="flex flex-col gap-8">
-      <header>
-        <p className="font-mono text-xs uppercase tracking-widest text-piedra">Noticias</p>
-        <h1 className="font-display text-3xl">Últimas publicaciones</h1>
-      </header>
+    <>
+      <Seccion aire="md">
+        <Contenedor ancho="amplio">
+          <EncabezadoDePagina
+            migas={
+              <Migas ruta={[{ etiqueta: 'Inicio', href: '/inicio' }, { etiqueta: 'Noticias' }]} />
+            }
+            titulo="Noticias"
+            entrada="Novedades de la institución: calendario, procesos de admisión y vida escolar."
+          />
+        </Contenedor>
+      </Seccion>
 
-      <div className="flex flex-col gap-6">
-        {entradas.map((n) => (
-          <Link key={n.id} href={`/blog/${n.slug}`} className="flex gap-4 rounded-sm border border-niebla p-4 hover:border-carmin">
-            {n.metaImgId && (
-              <div className="relative h-24 w-32 shrink-0 overflow-hidden rounded-sm bg-niebla">
-                <Image src={`/api/galeria/imagen/${n.metaImgId}`} alt="" fill className="object-cover" />
-              </div>
-            )}
-            <div>
-              <h2 className="font-display text-lg">{n.titulo}</h2>
-              {n.subtitulo && <p className="text-sm text-piedra">{n.subtitulo}</p>}
-              <p className="mt-1 text-xs text-piedra">{n.creadoEn.toISOString().slice(0, 10)}</p>
-            </div>
-          </Link>
-        ))}
-        {entradas.length === 0 && <p className="text-sm text-piedra">Todavía no hay publicaciones.</p>}
-      </div>
-    </div>
+      <Seccion aire="md" filete="arriba">
+        <Contenedor ancho="amplio">
+          {entradas.length > 0 ? (
+            <ol className="flex flex-col">
+              {entradas.map((n) => (
+                <li
+                  key={n.id}
+                  className="border-b border-niebla first:border-t first:border-t-tinta"
+                >
+                  <Link
+                    href={`/blog/${n.slug}` as Route}
+                    className="group grid gap-5 py-8 md:grid-cols-12 md:gap-10"
+                  >
+                    <time
+                      dateTime={fechaMaquina(n.creadoEn)}
+                      className="versalitas text-menudo text-piedra md:col-span-3 md:pt-2"
+                    >
+                      {fechaLarga(n.creadoEn)}
+                    </time>
+                    <div
+                      className={
+                        n.metaImgId
+                          ? 'flex flex-col gap-2 md:col-span-5'
+                          : 'flex flex-col gap-2 md:col-span-9'
+                      }
+                    >
+                      <h2 className="equilibrado font-display text-titulo font-medium text-tinta decoration-carmin underline-offset-4 group-hover:underline">
+                        {n.titulo}
+                      </h2>
+                      {n.subtitulo ? (
+                        <p className="prosa max-w-medida leading-relaxed text-piedra">
+                          {n.subtitulo}
+                        </p>
+                      ) : null}
+                    </div>
+                    {n.metaImgId ? (
+                      <div className="relative aspect-[3/2] overflow-hidden bg-niebla md:col-span-4">
+                        <Image
+                          src={`/api/galeria/imagen/${n.metaImgId}`}
+                          alt=""
+                          fill
+                          sizes="(max-width: 768px) 100vw, 30vw"
+                          className="object-cover"
+                        />
+                      </div>
+                    ) : null}
+                  </Link>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <EstadoVacio titulo="No hay noticias publicadas" />
+          )}
+        </Contenedor>
+      </Seccion>
+    </>
   )
 }

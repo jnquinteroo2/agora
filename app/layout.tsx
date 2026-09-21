@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { Cormorant_Garamond, Inter_Tight, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
+import { sitioIndexable, urlDelSitio } from '@/src/sitio'
+import { NOMBRE_DEL_SITIO } from '@/src/seo/metadatos'
 
 const display = Cormorant_Garamond({
   subsets: ['latin'],
@@ -24,15 +26,23 @@ const mono = JetBrains_Mono({
   display: 'swap',
 })
 
-export const metadata: Metadata = {
-  title: {
-    template: '%s | Colegio Ágora',
-    default: 'Institución Educativa Ágora — Funza, Cundinamarca',
-  },
-  description:
-    'El fundamento de un Estado es la educación de sus jóvenes. Bachillerato por ciclos CLEI en Funza, Cundinamarca.',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'),
-  robots: { index: true, follow: true },
+export const dynamic = 'force-dynamic'
+
+export function generateMetadata(): Metadata {
+  const indexable = sitioIndexable()
+  return {
+    metadataBase: urlDelSitio(),
+    title: {
+      template: `%s | ${NOMBRE_DEL_SITIO}`,
+      default: NOMBRE_DEL_SITIO,
+    },
+    description:
+      'Educación formal para jóvenes y adultos por Ciclos Lectivos Especiales Integrados (CLEI) en Funza, Cundinamarca.',
+    applicationName: NOMBRE_DEL_SITIO,
+    robots: indexable
+      ? { index: true, follow: true }
+      : { index: false, follow: false, googleBot: { index: false, follow: false } },
+  }
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -10,7 +10,6 @@ function crearExcelBuffer(filas: Record<string, string>[]): Buffer {
 }
 
 describe('parsearExcelPersonas()', () => {
-
   it('parsea filas válidas y devuelve el array de personas', () => {
     const buffer = crearExcelBuffer([
       {
@@ -98,5 +97,4 @@ describe('parsearExcelPersonas()', () => {
     const personas = parsearExcelPersonas(buffer)
     expect(personas[0]!.correo).toBeUndefined()
   })
-
 })

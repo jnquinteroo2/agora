@@ -1,51 +1,86 @@
+import { metadatosDePagina } from '@/src/seo/metadatos'
 import Link from 'next/link'
 import Image from 'next/image'
-import { and, desc, eq, isNull, lte, or } from 'drizzle-orm'
-import { db, conContextoRLS } from '@/src/datos/cliente'
-import { cmsEntrada } from '@/src/datos/esquema'
+import type { Route } from 'next'
+import { obtenerAlbumes } from '@/src/datos/cms-publico'
+import { Contenedor } from '@/src/ui/contenedor'
+import { Seccion, EncabezadoDePagina } from '@/src/ui/seccion'
+import { Migas } from '@/src/ui/migas'
+import { EstadoVacio } from '@/src/ui/estado-vacio'
+import { Greca } from '@/src/ui/greca'
+import { fechaLarga, fechaMaquina } from '@/src/ui/fecha'
 
 export const dynamic = 'force-dynamic'
 
-
-export const metadata = { title: 'Galería' }
+export const metadata = metadatosDePagina({
+  titulo: 'Galería',
+  descripcion: 'Álbumes fotográficos de la vida escolar, publicados por la institución.',
+  ruta: '/galeria',
+})
 
 export default async function GaleriaPage() {
-  const albumes = await conContextoRLS(db, { usuarioId: '', rol: 'anonimo' }, async (tx) =>
-    tx
-      .select()
-      .from(cmsEntrada)
-      .where(
-        and(
-          eq(cmsEntrada.tipo, 'album'),
-          eq(cmsEntrada.estado, 'publicado'),
-          isNull(cmsEntrada.eliminadoEn),
-          or(isNull(cmsEntrada.publicarEn), lte(cmsEntrada.publicarEn, new Date()))
-        )
-      )
-      .orderBy(desc(cmsEntrada.creadoEn))
-  )
+  const albumes = await obtenerAlbumes()
 
   return (
-    <div className="flex flex-col gap-8">
-      <header>
-        <p className="font-mono text-xs uppercase tracking-widest text-piedra">Galería</p>
-        <h1 className="font-display text-3xl">Álbumes fotográficos</h1>
-      </header>
+    <>
+      <Seccion aire="md">
+        <Contenedor ancho="amplio">
+          <EncabezadoDePagina
+            migas={
+              <Migas ruta={[{ etiqueta: 'Inicio', href: '/inicio' }, { etiqueta: 'Galería' }]} />
+            }
+            titulo="Galería"
+            entrada="Álbumes fotográficos de la vida escolar, publicados por la institución."
+          />
+        </Contenedor>
+      </Seccion>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        {albumes.map((a) => (
-          <Link key={a.id} href={`/galeria/${a.slug}`} className="flex flex-col gap-2 rounded-sm border border-niebla p-4 hover:border-carmin">
-            {a.metaImgId && (
-              <div className="relative h-40 w-full overflow-hidden rounded-sm bg-niebla">
-                <Image src={`/api/galeria/imagen/${a.metaImgId}`} alt="" fill className="object-cover" />
-              </div>
-            )}
-            <h2 className="font-display text-lg">{a.titulo}</h2>
-            {a.subtitulo && <p className="text-sm text-piedra">{a.subtitulo}</p>}
-          </Link>
-        ))}
-        {albumes.length === 0 && <p className="text-sm text-piedra">Todavía no hay álbumes publicados.</p>}
-      </div>
-    </div>
+      <Seccion aire="md" filete="arriba">
+        <Contenedor ancho="amplio">
+          {albumes.length > 0 ? (
+            <ul className="grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+              {albumes.map((a) => (
+                <li key={a.id}>
+                  <Link href={`/galeria/${a.slug}` as Route} className="group flex flex-col gap-4">
+                    <div className="relative aspect-[3/2] overflow-hidden bg-niebla">
+                      {a.metaImgId ? (
+                        <Image
+                          src={`/api/galeria/imagen/${a.metaImgId}`}
+                          alt=""
+                          fill
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 28rem"
+                          className="object-cover transition-transform duration-[var(--duration-slow)] ease-[var(--ease-out)] group-hover:scale-[1.02] motion-reduce:transition-none"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center">
+                          <Greca extension="sello" tono="piedra" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <h2 className="font-display text-rubro font-medium text-tinta decoration-carmin underline-offset-4 group-hover:underline">
+                        {a.titulo}
+                      </h2>
+                      {a.subtitulo ? (
+                        <p className="prosa text-nota leading-relaxed text-piedra">{a.subtitulo}</p>
+                      ) : null}
+                      <p className="flex flex-wrap gap-x-3 text-menudo text-piedra">
+                        <span className="font-mono font-tnum">
+                          {a.fotos === 1 ? '1 fotografía' : `${a.fotos} fotografías`}
+                        </span>
+                        <span aria-hidden="true">·</span>
+                        <time dateTime={fechaMaquina(a.creadoEn)}>{fechaLarga(a.creadoEn)}</time>
+                      </p>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <EstadoVacio titulo="No hay álbumes publicados" />
+          )}
+        </Contenedor>
+      </Seccion>
+    </>
   )
 }

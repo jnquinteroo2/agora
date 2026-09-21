@@ -1,7 +1,12 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Sin acceso' }
+export const dynamic = 'force-dynamic'
+
+export const metadata: Metadata = {
+  title: 'Sin acceso',
+  robots: { index: false, follow: false },
+}
 
 export default function SinAccesoPage() {
   return (
@@ -12,8 +17,8 @@ export default function SinAccesoPage() {
         </p>
         <h1 className="font-display text-3xl">Esta sección no corresponde a su rol</h1>
         <p className="text-sm leading-relaxed text-panel-secundario">
-          Su cuenta está activa, pero no tiene permiso para ver esta parte del panel. Si cree que
-          se trata de un error, comuníquelo a la dirección administrativa.
+          Su cuenta está activa, pero no tiene permiso para ver esta parte del panel. Si cree que se
+          trata de un error, comuníquelo a la dirección administrativa.
         </p>
         <Link href="/panel" className="text-sm text-carmin underline underline-offset-4">
           Volver a mi panel

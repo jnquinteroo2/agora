@@ -96,7 +96,7 @@ Definidos en CSS nativo (`tokens.css`), consumidos por Tailwind v4 via `@theme`.
 - Interlineado 1.5 en texto corrido, 1.1 en titulares display.
 - Medida óptima: 60–75 caracteres por línea.
 - Tracking negativo en display grande (`letter-spacing: -0.02em` en 3xl+).
-- Versalitas (`font-variant: small-caps`) para etiquetas institucionales ("CICLO 4B", "JORNADA NOCTURNA").
+- Versalitas (`font-variant: small-caps`) para etiquetas institucionales ("CICLO 4B", "JORNADA SABATINA").
 - Inter Tight nunca como tipografía de titular.
 
 ---

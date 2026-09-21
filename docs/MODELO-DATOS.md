@@ -131,7 +131,7 @@ CREATE TABLE curso (
   anio_lectivo_id uuid NOT NULL REFERENCES anio_lectivo(id),
   ciclo_id        uuid NOT NULL REFERENCES ciclo(id),
   jornada_id      uuid NOT NULL REFERENCES jornada(id),
-  nombre          text NOT NULL,   -- ej. "4B Nocturna 2025"
+  nombre          text NOT NULL,   -- ej. "4B Diurna 2026"
   eliminado_en    timestamptz,
   UNIQUE(anio_lectivo_id, ciclo_id, jornada_id)
 );

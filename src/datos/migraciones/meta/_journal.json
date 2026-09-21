@@ -57,6 +57,27 @@
       "when": 1788541500000,
       "tag": "0007_usuario_bootstrap_sesion",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789000000000,
+      "tag": "0008_configuracion_institucional_fila_unica",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789100000000,
+      "tag": "0009_anio_lectivo_unico_por_anio",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789200000000,
+      "tag": "0010_anio_lectivo_un_solo_activo",
+      "breakpoints": true
     }
   ]
 }

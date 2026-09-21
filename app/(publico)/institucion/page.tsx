@@ -1,61 +1,150 @@
-import { db } from '@/src/datos/cliente'
-import { configuracionInstitucional } from '@/src/datos/esquema'
+import { metadatosDePagina, resumir } from '@/src/seo/metadatos'
+import { obtenerConfiguracion, nombreLegal, ubicacion } from '@/src/datos/configuracion-publica'
+import { Contenedor } from '@/src/ui/contenedor'
+import { Seccion, TituloDeSeccion, EncabezadoDePagina } from '@/src/ui/seccion'
+import { Migas } from '@/src/ui/migas'
+import { EscudoDeVirtudes } from '@/src/ui/marca'
 
 export const dynamic = 'force-dynamic'
 
+export async function generateMetadata() {
+  const config = await obtenerConfiguracion()
+  const lugar = ubicacion(config) ?? 'Funza, Cundinamarca'
+  return metadatosDePagina({
+    titulo: 'Institución',
+    descripcion: resumir(
+      `${nombreLegal(config)}: un colegio de inspiración estoica en ${lugar}. Su escudo, las cuatro virtudes y lo que las inspira.`
+    ),
+    ruta: '/institucion',
+  })
+}
 
-export const metadata = { title: 'Institución' }
+const VIRTUDES = ['Justicia', 'Sabiduría', 'Templanza', 'Coraje']
 
 export default async function InstitucionPage() {
-  const [config] = await db.select().from(configuracionInstitucional).limit(1)
+  const config = await obtenerConfiguracion()
+  const legal = nombreLegal(config)
+
+  const datos = [
+    { termino: 'Código DANE', valor: config?.dane },
+    { termino: 'Resolución', valor: config?.resolucion },
+    { termino: 'NIT', valor: config?.nit },
+  ].filter((d) => Boolean(d.valor))
+
+  const direccion = [
+    { termino: 'Rectoría', valor: config?.rectorNombre },
+    { termino: 'Dirección administrativa', valor: config?.dirAdmNombre },
+  ].filter((d) => Boolean(d.valor))
 
   return (
-    <div className="flex flex-col gap-10">
-      <header>
-        <p className="font-mono text-xs uppercase tracking-widest text-piedra">Institución</p>
-        <h1 className="font-display text-3xl">{config?.nombreLegal ?? 'Institución Educativa Ágora'}</h1>
-        {config?.lema && <p className="mt-2 font-display text-lg italic text-piedra">{config.lema}</p>}
-      </header>
+    <>
+      <Seccion aire="md">
+        <Contenedor ancho="amplio">
+          <EncabezadoDePagina
+            migas={
+              <Migas
+                ruta={[{ etiqueta: 'Inicio', href: '/inicio' }, { etiqueta: 'Institución' }]}
+              />
+            }
+            titulo={legal}
+            entrada={
+              config?.lema
+                ? `Un colegio de inspiración estoica en Funza. Su lema lo resume: ${config.lema.toLowerCase()}.`
+                : 'Un colegio de inspiración estoica en Funza, Cundinamarca.'
+            }
+          />
+        </Contenedor>
+      </Seccion>
 
-      <section className="grid gap-8 md:grid-cols-2">
-        <div>
-          <h2 className="mb-2 font-display text-xl">Misión</h2>
-          <p className="text-sm leading-relaxed text-piedra">
-            Ofrecer una educación formal para jóvenes y adultos bajo el modelo de Ciclos Lectivos
-            Especiales Integrados (CLEI), que permita completar la educación básica y media con
-            calidad, flexibilidad horaria y acompañamiento cercano a cada estudiante.
-          </p>
-        </div>
-        <div>
-          <h2 className="mb-2 font-display text-xl">Visión</h2>
-          <p className="text-sm leading-relaxed text-piedra">
-            Ser reconocida en Funza y Cundinamarca como una institución de puertas abiertas para
-            quienes retoman sus estudios, con procesos académicos y administrativos claros,
-            documentados y accesibles.
-          </p>
-        </div>
-      </section>
+      <Seccion aire="md" filete="arriba">
+        <Contenedor ancho="amplio" className="grid items-center gap-12 lg:grid-cols-12 lg:gap-16">
+          <div className="mx-auto w-full max-w-sm lg:col-span-5">
+            <EscudoDeVirtudes
+              lado={480}
+              alt="Escudo del Colegio Ágora: la lambda sobre un disco negro, rodeada por una greca, las cuatro virtudes Justicia, Sabiduría, Templanza y Coraje, una corona de laurel y un aro dorado."
+            />
+          </div>
 
-      <section className="rounded-sm border border-niebla p-6">
-        <h2 className="mb-3 font-display text-xl">Datos institucionales</h2>
-        <dl className="grid gap-x-8 gap-y-2 text-sm md:grid-cols-2">
-          {config?.dane && (
-            <div className="flex justify-between border-b border-niebla py-1"><dt className="text-piedra">Código DANE</dt><dd>{config.dane}</dd></div>
-          )}
-          {config?.resolucion && (
-            <div className="flex justify-between border-b border-niebla py-1"><dt className="text-piedra">Resolución</dt><dd>{config.resolucion}</dd></div>
-          )}
-          {config?.nit && (
-            <div className="flex justify-between border-b border-niebla py-1"><dt className="text-piedra">NIT</dt><dd>{config.nit}</dd></div>
-          )}
-          {config?.rectorNombre && (
-            <div className="flex justify-between border-b border-niebla py-1"><dt className="text-piedra">Rector(a)</dt><dd>{config.rectorNombre}</dd></div>
-          )}
-        </dl>
-        {!config && (
-          <p className="text-sm text-piedra">La configuración institucional aún no se ha registrado.</p>
-        )}
-      </section>
-    </div>
+          <div className="flex flex-col gap-6 lg:col-span-7">
+            <TituloDeSeccion>Las cuatro virtudes del escudo</TituloDeSeccion>
+            <p className="prosa max-w-medida leading-relaxed text-piedra">
+              El escudo lleva inscritas las cuatro virtudes cardinales del estoicismo, la tradición
+              filosófica que da nombre y orientación a la institución.
+            </p>
+            <ol className="flex flex-col border-t border-niebla">
+              {VIRTUDES.map((virtud) => (
+                <li
+                  key={virtud}
+                  className="border-b border-niebla py-4 font-display text-titulo font-light text-tinta"
+                >
+                  {virtud}
+                </li>
+              ))}
+            </ol>
+          </div>
+        </Contenedor>
+      </Seccion>
+
+      <Seccion aire="md" filete="arriba">
+        <Contenedor ancho="amplio" className="grid gap-12 lg:grid-cols-12 lg:gap-16">
+          <div className="flex flex-col gap-4 lg:col-span-7">
+            <TituloDeSeccion>Misión</TituloDeSeccion>
+            <p className="prosa max-w-medida leading-relaxed text-tinta">
+              Ofrecer educación formal para jóvenes y adultos bajo el modelo de Ciclos Lectivos
+              Especiales Integrados, que permita completar la educación básica y media con calidad,
+              flexibilidad horaria y acompañamiento cercano a cada estudiante.
+            </p>
+          </div>
+          <div className="flex flex-col gap-4 lg:col-span-5">
+            <TituloDeSeccion>Visión</TituloDeSeccion>
+            <p className="prosa max-w-medida leading-relaxed text-piedra">
+              Ser reconocida en Funza y Cundinamarca como una institución de puertas abiertas para
+              quienes retoman sus estudios, con procesos académicos y administrativos claros,
+              documentados y accesibles.
+            </p>
+          </div>
+        </Contenedor>
+      </Seccion>
+
+      {direccion.length > 0 || datos.length > 0 ? (
+        <Seccion aire="md" filete="arriba">
+          <Contenedor ancho="amplio" className="flex flex-col gap-10">
+            {direccion.length > 0 ? (
+              <div className="flex flex-col gap-6">
+                <TituloDeSeccion>Rectoría y dirección</TituloDeSeccion>
+                <dl className="grid gap-px bg-niebla sm:grid-cols-2">
+                  {direccion.map((persona) => (
+                    <div
+                      key={persona.termino}
+                      className="flex flex-col gap-1 bg-hueso pt-5 pr-6 pb-6"
+                    >
+                      <dt className="versalitas text-menudo text-piedra">{persona.termino}</dt>
+                      <dd className="font-display text-rubro text-tinta">{persona.valor}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            ) : null}
+
+            {datos.length > 0 ? (
+              <div className="flex flex-col gap-6">
+                <TituloDeSeccion>Datos institucionales</TituloDeSeccion>
+                <dl className="flex max-w-texto flex-col border-t border-niebla">
+                  {datos.map((dato) => (
+                    <div
+                      key={dato.termino}
+                      className="flex items-baseline justify-between gap-6 border-b border-niebla py-3"
+                    >
+                      <dt className="text-nota text-piedra">{dato.termino}</dt>
+                      <dd className="font-mono font-tnum text-nota text-tinta">{dato.valor}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            ) : null}
+          </Contenedor>
+        </Seccion>
+      ) : null}
+    </>
   )
 }

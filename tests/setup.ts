@@ -14,6 +14,7 @@ const vars: Record<string, string> = {
   SMTP_FROM: 'test@localhost',
   SUPERADMIN_EMAIL: 'admin@test.com',
   SUPERADMIN_CONTRASENA_INICIAL: 'test12345678',
+  PDF_RENDER_BASE_URL: 'http://localhost:3000',
   PGBOSS_DATABASE_URL: process.env['TEST_DATABASE_URL'] ?? 'postgres://agora_app:dev@localhost:5432/agora_test',
 }
 

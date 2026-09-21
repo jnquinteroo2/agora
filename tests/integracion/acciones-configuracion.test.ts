@@ -136,21 +136,21 @@ describe('crearAnioLectivo — flujo completo Server Action → conContextoRLS �
   it('activarAnioLectivo desactiva los demás y activa el seleccionado', async () => {
     const { crearAnioLectivo, activarAnioLectivo } = await import('../../src/acciones/configuracion/anio-lectivo')
 
-    const r1 = await crearAnioLectivo({ nombre: 'ACT-2025', inicio: '2025-01-01', fin: '2025-12-31', activo: false })
-    const r2 = await crearAnioLectivo({ nombre: 'ACT-2026', inicio: '2026-01-01', fin: '2026-12-31', activo: false })
-    const id2025 = r1!.data!.id
-    const id2026 = r2!.data!.id
+    const r1 = await crearAnioLectivo({ nombre: 'ACT-2031', inicio: '2031-01-01', fin: '2031-12-31', activo: false })
+    const r2 = await crearAnioLectivo({ nombre: 'ACT-2032', inicio: '2032-01-01', fin: '2032-12-31', activo: false })
+    const id2031 = r1!.data!.id
+    const id2032 = r2!.data!.id
 
-    await activarAnioLectivo({ id: id2025 })
-    const actResult = await activarAnioLectivo({ id: id2026 })
+    await activarAnioLectivo({ id: id2031 })
+    const actResult = await activarAnioLectivo({ id: id2032 })
 
     expect(actResult?.data?.activo).toBe(true)
-    expect(actResult?.data?.id).toBe(id2026)
+    expect(actResult?.data?.id).toBe(id2032)
 
     const activos = await _sqlRoot`SELECT id FROM anio_lectivo WHERE activo = true`
     expect(activos).toHaveLength(1)
-    expect(activos[0]!['id']).toBe(id2026)
-    console.log(`[ACCIÓN] activarAnioLectivo → único activo confirmado: ${id2026} ✓`)
+    expect(activos[0]!['id']).toBe(id2032)
+    console.log(`[ACCIÓN] activarAnioLectivo → único activo confirmado: ${id2032} ✓`)
   })
 
 })

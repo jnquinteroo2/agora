@@ -2,7 +2,7 @@ import { hash } from '@node-rs/argon2'
 import { createLocalAccountIssuer } from 'better-auth/db'
 import { db, conContextoRLS } from './cliente'
 import * as e from './esquema'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, asc } from 'drizzle-orm'
 import { logger } from '../logger'
 
 const CONTEXTO_SIEMBRA = {
@@ -26,23 +26,27 @@ async function upsert<T extends { id: string }>(
 async function sembrar() {
   logger.info('Iniciando siembra de datos...')
 
-  const [anio] = await db
-    .insert(e.anioLectivo)
-    .values({ nombre: '2025', inicio: '2025-02-01', fin: '2025-11-30', activo: true })
-    .onConflictDoNothing()
-    .returning()
+  const [anioExistente] = await db
+    .select({ id: e.anioLectivo.id })
+    .from(e.anioLectivo)
+    .where(eq(e.anioLectivo.nombre, '2025'))
+    .orderBy(asc(e.anioLectivo.creadoEn), asc(e.anioLectivo.id))
+    .limit(1)
 
-  const anioId = anio?.id ?? (
-    await db.select({ id: e.anioLectivo.id })
-      .from(e.anioLectivo)
-      .where(eq(e.anioLectivo.nombre, '2025'))
-      .then(r => r[0]?.id)
-  )
+  let anioId = anioExistente?.id
+
+  if (!anioId) {
+    const [anioCreado] = await db
+      .insert(e.anioLectivo)
+      .values({ nombre: '2025', inicio: '2025-02-01', fin: '2025-11-30', activo: true })
+      .returning({ id: e.anioLectivo.id })
+    anioId = anioCreado?.id
+  }
+
   if (!anioId) throw new Error('No se pudo crear el año lectivo')
 
   const jornadas = [
     { codigo: 'D' as const, nombre: 'Diurna', detalle: 'Lunes a viernes en la mañana' },
-    { codigo: 'N' as const, nombre: 'Nocturna', detalle: null },
     { codigo: 'S' as const, nombre: 'Semipresencial sabatina', detalle: null },
   ]
   const jornadaIds: Record<string, string> = {}
@@ -178,15 +182,22 @@ async function sembrar() {
     }).onConflictDoNothing()
   )
 
-  await db.insert(e.configuracionInstitucional).values({
-    nombreLegal: 'Institución Educativa Ágora Funza',
-    nombreCorto: 'Colegio Ágora',
-    lema: 'El fundamento de un Estado es la educación de sus jóvenes',
-    municipio: 'Funza',
-    departamento: 'Cundinamarca',
-    rectorNombre: 'William Ricardo Hernández Garzón',
-    dirAdmNombre: 'Emma Gamboa',
-  }).onConflictDoNothing()
+  const [configuracionExistente] = await db
+    .select({ id: e.configuracionInstitucional.id })
+    .from(e.configuracionInstitucional)
+    .limit(1)
+
+  if (!configuracionExistente) {
+    await db.insert(e.configuracionInstitucional).values({
+      nombreLegal: 'Institución Educativa Ágora Funza',
+      nombreCorto: 'Colegio Ágora',
+      lema: 'El fundamento de un Estado es la educación de sus jóvenes',
+      municipio: 'Funza',
+      departamento: 'Cundinamarca',
+      rectorNombre: 'William Ricardo Hernández Garzón',
+      dirAdmNombre: 'Emma Gamboa',
+    })
+  }
 
   const { env: envars } = await import('../env')
 

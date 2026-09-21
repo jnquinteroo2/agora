@@ -48,6 +48,59 @@
 
   --border-default: 1px solid var(--color-niebla);
   --border-strong:  1px solid var(--color-tinta);
+
+  --text-menudo:   0.75rem;
+  --text-menudo--line-height: 1.4;
+  --text-nota:     0.875rem;
+  --text-nota--line-height: 1.5;
+  --text-cuerpo:   1rem;
+  --text-cuerpo--line-height: 1.6;
+  --text-guia:     1.25rem;
+  --text-guia--line-height: 1.5;
+  --text-rubro:    clamp(1.375rem, 1.2rem + 0.9vw, 1.563rem);
+  --text-rubro--line-height: 1.2;
+  --text-rubro--letter-spacing: -0.01em;
+  --text-titulo:   clamp(1.625rem, 1.3rem + 1.6vw, 1.953rem);
+  --text-titulo--line-height: 1.15;
+  --text-titulo--letter-spacing: -0.015em;
+  --text-portada:  clamp(1.953rem, 1.4rem + 2.8vw, 2.441rem);
+  --text-portada--line-height: 1.1;
+  --text-portada--letter-spacing: -0.02em;
+  --text-lema:     clamp(2.25rem, 1.4rem + 4.2vw, 3.052rem);
+  --text-lema--line-height: 1.08;
+  --text-lema--letter-spacing: -0.025em;
+  --text-lambda:   clamp(3rem, 1.6rem + 6.4vw, 3.815rem);
+  --text-lambda--line-height: 1;
+  --text-lambda--letter-spacing: 0;
+
+  --container-medida:    66ch;
+  --container-texto:     44rem;
+  --container-contenido: 72rem;
+  --container-amplio:    88rem;
+
+  --spacing-aire-sm: clamp(2.5rem, 1.5rem + 3vw, 3.5rem);
+  --spacing-aire:    clamp(4rem, 2rem + 6vw, 6rem);
+  --spacing-aire-lg: clamp(5.5rem, 2.5rem + 9vw, 8.5rem);
+  --spacing-margen:  clamp(1.25rem, 0.6rem + 2.4vw, 2.5rem);
+
+  --shadow-sutil:   0 1px 2px rgb(11 11 12 / 0.06);
+  --shadow-elevado: 0 2px 8px rgb(11 11 12 / 0.08);
+
+  --tracking-versal: 0.08em;
+  --tracking-rotulo: 0.16em;
+}
+
+@theme {
+  --capa-base: 0;
+  --capa-pegajosa: 10;
+  --capa-menu: 20;
+  --capa-velo: 30;
+  --capa-dialogo: 40;
+  --capa-aviso: 50;
+
+  --foco-grosor: 2px;
+  --foco-separacion: 2px;
+  --foco-color: var(--color-carmin);
 }
 
 @layer base {
@@ -77,8 +130,8 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-carmin);
-    outline-offset: 2px;
+    outline: var(--foco-grosor) solid var(--foco-color);
+    outline-offset: var(--foco-separacion);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -114,5 +167,93 @@
       opacity: 1;
       transform: translateY(0);
     }
+  }
+
+  .transicion-ui {
+    transition-property: transform, background-color, border-color, color, opacity;
+    transition-duration: var(--duration-fast);
+    transition-timing-function: var(--ease-out);
+  }
+
+  .transicion-panel {
+    transition-property: transform, opacity;
+    transition-duration: var(--duration-slow);
+    transition-timing-function: var(--ease-out);
+  }
+
+  @keyframes velo-entra {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes velo-sale {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+
+  @keyframes panel-entra {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+  }
+
+  @keyframes panel-sale {
+    from { transform: translateX(0); }
+    to { transform: translateX(100%); }
+  }
+
+  .velo[data-state='open'] {
+    animation: velo-entra var(--duration-base) var(--ease-out) forwards;
+  }
+
+  .velo[data-state='closed'] {
+    animation: velo-sale var(--duration-fast) var(--ease-out) forwards;
+  }
+
+  .panel-lateral[data-state='open'] {
+    animation: panel-entra var(--duration-slow) var(--ease-out) forwards;
+  }
+
+  .panel-lateral[data-state='closed'] {
+    animation: panel-sale var(--duration-fast) var(--ease-out) forwards;
+  }
+
+  .greca {
+    height: 10px;
+    background-color: currentColor;
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='10'%3E%3Cpath d='M0 1H24M1 1V9H23V4H7V7H17' fill='none' stroke='%23000' stroke-width='1.25'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='10'%3E%3Cpath d='M0 1H24M1 1V9H23V4H7V7H17' fill='none' stroke='%23000' stroke-width='1.25'/%3E%3C/svg%3E");
+    -webkit-mask-repeat: repeat-x;
+    mask-repeat: repeat-x;
+    -webkit-mask-size: 24px 10px;
+    mask-size: 24px 10px;
+  }
+
+  .equilibrado {
+    text-wrap: balance;
+  }
+
+  .prosa {
+    text-wrap: pretty;
+  }
+
+  .versalitas {
+    font-variant-caps: all-small-caps;
+    letter-spacing: var(--tracking-versal);
+  }
+}
+
+@media print {
+  @page {
+    margin: 18mm 16mm;
+  }
+
+  html,
+  body {
+    background: #ffffff;
+    color: #000000;
+  }
+
+  a {
+    color: inherit;
   }
 }

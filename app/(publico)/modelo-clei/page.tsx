@@ -1,64 +1,83 @@
-export const metadata = { title: 'Modelo CLEI' }
+import { metadatosDePagina } from '@/src/seo/metadatos'
+import { obtenerCiclos } from '@/src/datos/oferta-publica'
+import { Contenedor } from '@/src/ui/contenedor'
+import { Seccion, TituloDeSeccion, EncabezadoDePagina } from '@/src/ui/seccion'
+import { Migas } from '@/src/ui/migas'
+import { EscaleraCleiCompleta } from '@/src/ui/escalera-clei'
+import { EnlaceBoton } from '@/src/ui/boton'
 
-const CICLOS = [
-  { ciclo: '3A y 3B', grados: 'Sexto y séptimo', duracion: '2 semestres (uno por ciclo)' },
-  { ciclo: '4A y 4B', grados: 'Octavo y noveno', duracion: '2 semestres (uno por ciclo)' },
-  { ciclo: '5', grados: 'Décimo', duracion: '1 semestre' },
-  { ciclo: '6', grados: 'Undécimo', duracion: '1 semestre' },
-]
+export const dynamic = 'force-dynamic'
 
-export default function ModeloCleiPage() {
+export const metadata = metadatosDePagina({
+  titulo: 'Modelo CLEI',
+  descripcion:
+    'Qué son los Ciclos Lectivos Especiales Integrados: la modalidad oficial de educación básica y media para jóvenes y adultos en Colombia.',
+  ruta: '/modelo-clei',
+})
+
+export default async function ModeloCleiPage() {
+  const ciclos = await obtenerCiclos()
+
   return (
-    <div className="flex flex-col gap-10">
-      <header>
-        <p className="font-mono text-xs uppercase tracking-widest text-piedra">Modelo pedagógico</p>
-        <h1 className="font-display text-3xl">Ciclos Lectivos Especiales Integrados (CLEI)</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-piedra">
-          El modelo CLEI es la modalidad oficial de educación para jóvenes y adultos en Colombia:
-          agrupa dos grados de la educación regular en un solo ciclo, permitiendo avanzar en el
-          currículo con una intensidad horaria adaptada a quienes trabajan o tienen otras
-          responsabilidades durante el día.
-        </p>
-      </header>
+    <>
+      <Seccion aire="md">
+        <Contenedor ancho="amplio">
+          <EncabezadoDePagina
+            migas={
+              <Migas
+                ruta={[{ etiqueta: 'Inicio', href: '/inicio' }, { etiqueta: 'Modelo CLEI' }]}
+              />
+            }
+            titulo="Ciclos Lectivos Especiales Integrados"
+            entrada="El modelo CLEI es la modalidad oficial de educación para jóvenes y adultos en Colombia. Agrupa la educación básica y media en ciclos, de modo que se avanza en el currículo con una intensidad horaria propia de la educación de adultos."
+          />
+        </Contenedor>
+      </Seccion>
 
-      <section>
-        <h2 className="mb-4 font-display text-xl">Ciclos que ofrece la institución</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[480px] border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-niebla text-left text-piedra">
-                <th className="py-2">Ciclo</th>
-                <th className="py-2">Equivale a</th>
-                <th className="py-2">Duración aproximada</th>
-              </tr>
-            </thead>
-            <tbody>
-              {CICLOS.map((c) => (
-                <tr key={c.ciclo} className="border-b border-niebla/60">
-                  <td className="py-2">{c.ciclo}</td>
-                  <td className="py-2">{c.grados}</td>
-                  <td className="py-2">{c.duracion}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+      {ciclos.length > 0 ? (
+        <Seccion aire="md" filete="arriba">
+          <Contenedor ancho="amplio" className="flex flex-col gap-8">
+            <div className="flex flex-col gap-3">
+              <TituloDeSeccion>La escalera de ciclos</TituloDeSeccion>
+              <p className="prosa max-w-medida leading-relaxed text-piedra">
+                Cada peldaño es un ciclo, y cada ciclo equivale a un grado de la educación regular.
+                Se ingresa en el ciclo que corresponde a los estudios ya cursados y se avanza hasta
+                completar el último.
+              </p>
+            </div>
 
-      <section className="grid gap-6 md:grid-cols-3">
-        <div className="rounded-sm border border-niebla p-4">
-          <h3 className="mb-2 font-display text-lg">Jornada diurna</h3>
-          <p className="text-sm text-piedra">Clases en horario de mañana, de lunes a viernes.</p>
-        </div>
-        <div className="rounded-sm border border-niebla p-4">
-          <h3 className="mb-2 font-display text-lg">Jornada nocturna</h3>
-          <p className="text-sm text-piedra">Clases en horario nocturno, de lunes a viernes.</p>
-        </div>
-        <div className="rounded-sm border border-niebla p-4">
-          <h3 className="mb-2 font-display text-lg">Semipresencial sabatina</h3>
-          <p className="text-sm text-piedra">Encuentros presenciales concentrados los sábados.</p>
-        </div>
-      </section>
-    </div>
+            <EscaleraCleiCompleta ciclos={ciclos} />
+          </Contenedor>
+        </Seccion>
+      ) : null}
+
+      <Seccion aire="md" filete="arriba">
+        <Contenedor ancho="amplio" className="grid gap-12 lg:grid-cols-12 lg:gap-16">
+          <div className="flex flex-col gap-4 lg:col-span-6">
+            <TituloDeSeccion>Quién puede estudiar por ciclos</TituloDeSeccion>
+            <p className="prosa max-w-medida leading-relaxed text-tinta">
+              El modelo está dirigido a jóvenes y adultos que no terminaron la educación básica o
+              media en la edad regular y quieren completarla en un programa pensado para su edad.
+            </p>
+          </div>
+          <div className="flex flex-col gap-4 lg:col-span-6">
+            <TituloDeSeccion>Cómo se ingresa</TituloDeSeccion>
+            <p className="prosa max-w-medida leading-relaxed text-piedra">
+              El ciclo de ingreso depende de los estudios ya aprobados, que se acreditan con los
+              certificados correspondientes. El proceso empieza con el formulario de admisión y
+              continúa con la institución, que se comunica con el acudiente registrado.
+            </p>
+            <div className="flex flex-wrap gap-4 pt-2">
+              <EnlaceBoton href="/admisiones" tono="primario">
+                Iniciar la admisión
+              </EnlaceBoton>
+              <EnlaceBoton href="/oferta" tono="secundario">
+                Ver ciclos y jornadas
+              </EnlaceBoton>
+            </div>
+          </div>
+        </Contenedor>
+      </Seccion>
+    </>
   )
 }

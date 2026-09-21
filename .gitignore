@@ -2,7 +2,8 @@
 node_modules/
 .pnp
 .pnp.js
-
+.claude
+.gitattributes
 # Build
 .next/
 out/
@@ -50,4 +51,6 @@ backups/
 
 # Tipos generados por Next.js
 next-env.d.ts
-.claude
+
+# Capturas de UI (locales, no versionadas)
+capturas/
