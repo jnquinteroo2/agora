@@ -11,9 +11,12 @@ import {
 } from '@/src/acciones/financiero/concepto-categoria'
 import { crearPlanCobro } from '@/src/acciones/financiero/plan-cobro'
 import type { ConfiguracionInstitucional } from '@/src/datos/esquema'
-import { campo, boton } from '@/src/ui/estilos'
+import { campo, boton, etiqueta } from '@/src/ui/estilos'
 
-interface ConceptoOCategoria { id: string; nombre: string }
+interface ConceptoOCategoria {
+  id: string
+  nombre: string
+}
 
 export function FormularioInstitucion({ actual }: { actual: ConfiguracionInstitucional | null }) {
   const [nombreLegal, setNombreLegal] = useState(actual?.nombreLegal ?? '')
@@ -36,7 +39,13 @@ export function FormularioInstitucion({ actual }: { actual: ConfiguracionInstitu
     <form
       onSubmit={(e) => {
         e.preventDefault()
-        if (!nombreLegal.trim() || !nombreCorto.trim() || !rectorNombre.trim() || !dirAdmNombre.trim()) return
+        if (
+          !nombreLegal.trim() ||
+          !nombreCorto.trim() ||
+          !rectorNombre.trim() ||
+          !dirAdmNombre.trim()
+        )
+          return
         accion.execute({
           nombreLegal: nombreLegal.trim(),
           nombreCorto: nombreCorto.trim(),
@@ -53,26 +62,119 @@ export function FormularioInstitucion({ actual }: { actual: ConfiguracionInstitu
           dirAdmNombre: dirAdmNombre.trim(),
         })
       }}
-      className="flex flex-wrap gap-2"
+      className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-4"
     >
-      <input value={nombreLegal} onChange={(e) => setNombreLegal(e.target.value)} placeholder="Nombre legal" className={`${campo} w-72`} />
-      <input value={nombreCorto} onChange={(e) => setNombreCorto(e.target.value)} placeholder="Nombre corto" className={`${campo} w-48`} />
-      <input value={lema} onChange={(e) => setLema(e.target.value)} placeholder="Lema (opcional)" className={`${campo} w-72`} />
-      <input value={nit} onChange={(e) => setNit(e.target.value)} placeholder="NIT (opcional)" className={`${campo} w-40`} />
-      <input value={dane} onChange={(e) => setDane(e.target.value)} placeholder="DANE (opcional)" className={`${campo} w-40`} />
-      <input value={resolucion} onChange={(e) => setResolucion(e.target.value)} placeholder="Resolución (opcional)" className={`${campo} w-56`} />
-      <input value={direccion} onChange={(e) => setDireccion(e.target.value)} placeholder="Dirección (opcional)" className={`${campo} w-56`} />
-      <input value={municipio} onChange={(e) => setMunicipio(e.target.value)} placeholder="Municipio (opcional)" className={`${campo} w-40`} />
-      <input value={departamento} onChange={(e) => setDepartamento(e.target.value)} placeholder="Departamento (opcional)" className={`${campo} w-40`} />
-      <input value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="Teléfono (opcional)" className={`${campo} w-40`} />
-      <input value={correo} onChange={(e) => setCorreo(e.target.value)} placeholder="Correo (opcional)" className={`${campo} w-56`} />
-      <input value={rectorNombre} onChange={(e) => setRectorNombre(e.target.value)} placeholder="Nombre del rector" className={`${campo} w-56`} />
-      <input value={dirAdmNombre} onChange={(e) => setDirAdmNombre(e.target.value)} placeholder="Nombre dir. administrativo" className={`${campo} w-56`} />
+      <label className={etiqueta}>
+        <span>Nombre legal</span>
+        <input
+          value={nombreLegal}
+          onChange={(e) => setNombreLegal(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Nombre corto</span>
+        <input
+          value={nombreCorto}
+          onChange={(e) => setNombreCorto(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Lema (opcional)</span>
+        <input
+          value={lema}
+          onChange={(e) => setLema(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>NIT (opcional)</span>
+        <input value={nit} onChange={(e) => setNit(e.target.value)} className={`${campo} w-full`} />
+      </label>
+      <label className={etiqueta}>
+        <span>DANE (opcional)</span>
+        <input
+          value={dane}
+          onChange={(e) => setDane(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Resolución (opcional)</span>
+        <input
+          value={resolucion}
+          onChange={(e) => setResolucion(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Dirección (opcional)</span>
+        <input
+          value={direccion}
+          onChange={(e) => setDireccion(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Municipio (opcional)</span>
+        <input
+          value={municipio}
+          onChange={(e) => setMunicipio(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Departamento (opcional)</span>
+        <input
+          value={departamento}
+          onChange={(e) => setDepartamento(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Teléfono (opcional)</span>
+        <input
+          value={telefono}
+          onChange={(e) => setTelefono(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Correo (opcional)</span>
+        <input
+          value={correo}
+          onChange={(e) => setCorreo(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Rectoría</span>
+        <input
+          value={rectorNombre}
+          onChange={(e) => setRectorNombre(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Dirección administrativa</span>
+        <input
+          value={dirAdmNombre}
+          onChange={(e) => setDirAdmNombre(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
       <button type="submit" disabled={accion.isExecuting} className={boton}>
         {accion.isExecuting ? 'Guardando…' : 'Guardar configuración'}
       </button>
-      {accion.hasErrored && <p className="w-full text-xs text-error">{accion.result.serverError}</p>}
-      {accion.hasSucceeded && <p className="w-full text-xs text-exito">Guardado ✓</p>}
+      {accion.hasErrored && (
+        <p className="text-menudo text-error sm:col-span-2 lg:col-span-4">
+          {accion.result.serverError}
+        </p>
+      )}
+      {accion.hasSucceeded && (
+        <p className="text-menudo text-exito sm:col-span-2 lg:col-span-4">Guardado</p>
+      )}
     </form>
   )
 }
@@ -90,11 +192,18 @@ export function FormularioConcepto() {
       }}
       className="flex gap-2"
     >
-      <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre del concepto" className={`${campo} flex-1`} />
+      <label className={etiqueta}>
+        <span>Nombre del concepto</span>
+        <input
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
       <button type="submit" disabled={accion.isExecuting} className={boton}>
         {accion.isExecuting ? 'Creando…' : 'Añadir'}
       </button>
-      {accion.hasErrored && <p className="text-xs text-error">{accion.result.serverError}</p>}
+      {accion.hasErrored && <p className="text-menudo text-error">{accion.result.serverError}</p>}
     </form>
   )
 }
@@ -104,9 +213,13 @@ export function FilaConcepto({ concepto }: { concepto: ConceptoOCategoria }) {
   if (accion.hasSucceeded) return null
 
   return (
-    <li className="flex items-center justify-between gap-2 text-panel-secundario">
+    <li className="flex items-center justify-between gap-2 text-texto-secundario">
       <span>{concepto.nombre}</span>
-      <button onClick={() => accion.execute({ id: concepto.id })} disabled={accion.isExecuting} className="text-xs hover:text-panel-texto">
+      <button
+        onClick={() => accion.execute({ id: concepto.id })}
+        disabled={accion.isExecuting}
+        className="text-menudo hover:text-texto"
+      >
         {accion.isExecuting ? 'Eliminando…' : 'Eliminar'}
       </button>
     </li>
@@ -126,11 +239,18 @@ export function FormularioCategoria() {
       }}
       className="flex gap-2"
     >
-      <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre de la categoría" className={`${campo} flex-1`} />
+      <label className={etiqueta}>
+        <span>Nombre de la categoría</span>
+        <input
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
       <button type="submit" disabled={accion.isExecuting} className={boton}>
         {accion.isExecuting ? 'Creando…' : 'Añadir'}
       </button>
-      {accion.hasErrored && <p className="text-xs text-error">{accion.result.serverError}</p>}
+      {accion.hasErrored && <p className="text-menudo text-error">{accion.result.serverError}</p>}
     </form>
   )
 }
@@ -140,9 +260,13 @@ export function FilaCategoria({ categoria }: { categoria: ConceptoOCategoria }) 
   if (accion.hasSucceeded) return null
 
   return (
-    <li className="flex items-center justify-between gap-2 text-panel-secundario">
+    <li className="flex items-center justify-between gap-2 text-texto-secundario">
       <span>{categoria.nombre}</span>
-      <button onClick={() => accion.execute({ id: categoria.id })} disabled={accion.isExecuting} className="text-xs hover:text-panel-texto">
+      <button
+        onClick={() => accion.execute({ id: categoria.id })}
+        disabled={accion.isExecuting}
+        className="text-menudo hover:text-texto"
+      >
         {accion.isExecuting ? 'Eliminando…' : 'Eliminar'}
       </button>
     </li>
@@ -161,7 +285,10 @@ export function FormularioPlanCobro({
   const [mes, setMes] = useState('')
   const [valorProgramado, setValorProgramado] = useState('')
   const accion = useAction(crearPlanCobro, {
-    onSuccess: () => { setValorProgramado(''); setMes('') },
+    onSuccess: () => {
+      setValorProgramado('')
+      setMes('')
+    },
   })
 
   return (
@@ -177,27 +304,70 @@ export function FormularioPlanCobro({
           valorProgramado: valor,
         })
       }}
-      className="flex flex-wrap gap-2"
+      className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-4"
     >
-      <select value={matriculaId} onChange={(e) => setMatriculaId(e.target.value)} className={`${campo} min-w-56`}>
-        <option value="">Estudiante…</option>
-        {matriculas.map((m) => (
-          <option key={m.id} value={m.id}>{m.nombre}</option>
-        ))}
-      </select>
-      <select value={conceptoId} onChange={(e) => setConceptoId(e.target.value)} className={campo}>
-        <option value="">Concepto…</option>
-        {conceptos.map((c) => (
-          <option key={c.id} value={c.id}>{c.nombre}</option>
-        ))}
-      </select>
-      <input value={mes} onChange={(e) => setMes(e.target.value)} type="number" min={1} max={12} placeholder="Mes (opcional)" className={`${campo} w-32`} />
-      <input value={valorProgramado} onChange={(e) => setValorProgramado(e.target.value)} type="number" min={1} placeholder="Valor programado" className={`${campo} w-36`} />
+      <label className={`${etiqueta} min-w-56`}>
+        <span>Estudiante</span>
+        <select
+          value={matriculaId}
+          onChange={(e) => setMatriculaId(e.target.value)}
+          className={`${campo} w-full`}
+        >
+          <option value="">Seleccione</option>
+          {matriculas.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.nombre}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className={etiqueta}>
+        <span>Concepto</span>
+        <select
+          value={conceptoId}
+          onChange={(e) => setConceptoId(e.target.value)}
+          className={`${campo} w-full`}
+        >
+          <option value="">Seleccione</option>
+          {conceptos.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.nombre}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className={etiqueta}>
+        <span>Mes (opcional)</span>
+        <input
+          value={mes}
+          onChange={(e) => setMes(e.target.value)}
+          type="number"
+          min={1}
+          max={12}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Valor programado</span>
+        <input
+          value={valorProgramado}
+          onChange={(e) => setValorProgramado(e.target.value)}
+          type="number"
+          min={1}
+          className={`${campo} w-full`}
+        />
+      </label>
       <button type="submit" disabled={accion.isExecuting} className={boton}>
         {accion.isExecuting ? 'Guardando…' : 'Añadir plan de cobro'}
       </button>
-      {accion.hasErrored && <p className="w-full text-xs text-error">{accion.result.serverError}</p>}
-      {accion.hasSucceeded && <p className="w-full text-xs text-exito">Plan de cobro creado ✓</p>}
+      {accion.hasErrored && (
+        <p className="text-menudo text-error sm:col-span-2 lg:col-span-4">
+          {accion.result.serverError}
+        </p>
+      )}
+      {accion.hasSucceeded && (
+        <p className="text-menudo text-exito sm:col-span-2 lg:col-span-4">Plan de cobro creado</p>
+      )}
     </form>
   )
 }

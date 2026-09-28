@@ -16,6 +16,18 @@ function redactarPII(valor: string): string {
   return resultado
 }
 
+export const RUTAS_REDACTADAS = [
+  '*.password',
+  '*.contrasena',
+  '*.contrasenaTemporal',
+  '*.contrasenaInicial',
+  '*.credencialTemporal',
+  '*.credentials',
+  '*.token',
+  '*.secret',
+  '*.authorization',
+]
+
 export const logger = pino({
   level: env.NODE_ENV === 'production' ? 'info' : 'debug',
   ...(env.NODE_ENV !== 'production' && {
@@ -30,7 +42,7 @@ export const logger = pino({
     }),
   },
   redact: {
-    paths: ['*.password', '*.contrasena', '*.token', '*.secret', '*.authorization'],
+    paths: RUTAS_REDACTADAS,
     censor: '[REDACTADO]',
   },
   hooks: {

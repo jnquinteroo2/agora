@@ -5,11 +5,21 @@ import { useAction } from 'next-safe-action/hooks'
 import { registrarRecibo, anularRecibo, generarPDFRecibo } from '@/src/acciones/financiero/recibo'
 import { registrarEgreso, anularEgreso, generarPDFEgreso } from '@/src/acciones/financiero/egreso'
 import type { ReciboCaja, Egreso } from '@/src/datos/esquema'
-import { campo, boton, botonSecundario } from '@/src/ui/estilos'
+import { campo, boton, botonSecundario, etiqueta } from '@/src/ui/estilos'
 
 const FORMAS_PAGO = ['efectivo', 'transferencia', 'cheque', 'tarjeta', 'otro'] as const
+const ETIQUETAS_FORMA_PAGO: Record<(typeof FORMAS_PAGO)[number], string> = {
+  efectivo: 'Efectivo',
+  transferencia: 'Transferencia',
+  cheque: 'Cheque',
+  tarjeta: 'Tarjeta',
+  otro: 'Otro',
+}
 
-interface Concepto { id: string; nombre: string }
+interface Concepto {
+  id: string
+  nombre: string
+}
 
 export function FormularioRecibo({ conceptos }: { conceptos: Concepto[] }) {
   const [matriculaId, setMatriculaId] = useState('')
@@ -45,44 +55,99 @@ export function FormularioRecibo({ conceptos }: { conceptos: Concepto[] }) {
           fecha,
         })
       }}
-      className="flex flex-wrap gap-2"
+      className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-4"
     >
-      <input value={beneficiario} onChange={(e) => setBeneficiario(e.target.value)} placeholder="Recibido de" className={`${campo} w-56`} />
-      <select value={conceptoId} onChange={(e) => setConceptoId(e.target.value)} className={campo}>
-        <option value="">Concepto…</option>
-        {conceptos.map((c) => (
-          <option key={c.id} value={c.id}>{c.nombre}</option>
-        ))}
-      </select>
-      <input
-        value={matriculaId}
-        onChange={(e) => setMatriculaId(e.target.value)}
-        placeholder="ID de matrícula (opcional)"
-        className={`${campo} w-64`}
-      />
-      <input value={valor} onChange={(e) => setValor(e.target.value)} type="number" min={1} placeholder="Valor" className={`${campo} w-32`} />
-      <select value={formaPago} onChange={(e) => setFormaPago(e.target.value as typeof formaPago)} className={campo}>
-        {FORMAS_PAGO.map((f) => (
-          <option key={f} value={f}>{f}</option>
-        ))}
-      </select>
-      <input value={fecha} onChange={(e) => setFecha(e.target.value)} type="date" className={campo} />
-      <input
-        value={descripcion}
-        onChange={(e) => setDescripcion(e.target.value)}
-        placeholder="Descripción (opcional)"
-        className={`${campo} w-56`}
-      />
+      <label className={etiqueta}>
+        <span>Recibido de</span>
+        <input
+          value={beneficiario}
+          onChange={(e) => setBeneficiario(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Concepto</span>
+        <select
+          value={conceptoId}
+          onChange={(e) => setConceptoId(e.target.value)}
+          className={`${campo} w-full`}
+        >
+          <option value="">Seleccione</option>
+          {conceptos.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.nombre}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className={etiqueta}>
+        <span>Identificador de la matrícula (opcional)</span>
+        <input
+          value={matriculaId}
+          onChange={(e) => setMatriculaId(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Valor</span>
+        <input
+          value={valor}
+          onChange={(e) => setValor(e.target.value)}
+          type="number"
+          min={1}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Forma de pago</span>
+        <select
+          value={formaPago}
+          onChange={(e) => setFormaPago(e.target.value as typeof formaPago)}
+          className={`${campo} w-full`}
+        >
+          {FORMAS_PAGO.map((f) => (
+            <option key={f} value={f}>
+              {ETIQUETAS_FORMA_PAGO[f]}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className={etiqueta}>
+        <span>Fecha</span>
+        <input
+          value={fecha}
+          onChange={(e) => setFecha(e.target.value)}
+          type="date"
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Descripción (opcional)</span>
+        <input
+          value={descripcion}
+          onChange={(e) => setDescripcion(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
       <button type="submit" disabled={accion.isExecuting} className={boton}>
         {accion.isExecuting ? 'Registrando…' : 'Registrar recibo'}
       </button>
-      {accion.hasErrored && <p className="w-full text-xs text-error">{accion.result.serverError}</p>}
-      {accion.hasSucceeded && <p className="w-full text-xs text-exito">Recibo registrado ✓</p>}
+      {accion.hasErrored && (
+        <p className="text-menudo text-error sm:col-span-2 lg:col-span-4">
+          {accion.result.serverError}
+        </p>
+      )}
+      {accion.hasSucceeded && (
+        <p className="text-menudo text-exito sm:col-span-2 lg:col-span-4">Recibo registrado</p>
+      )}
     </form>
   )
 }
 
-interface Categoria { id: string; nombre: string }
+interface Categoria {
+  id: string
+  nombre: string
+}
 
 export function FormularioEgreso({ categorias }: { categorias: Categoria[] }) {
   const [categoriaId, setCategoriaId] = useState('')
@@ -113,28 +178,69 @@ export function FormularioEgreso({ categorias }: { categorias: Categoria[] }) {
           fecha,
         })
       }}
-      className="flex flex-wrap gap-2"
+      className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-4"
     >
-      <input value={beneficiario} onChange={(e) => setBeneficiario(e.target.value)} placeholder="Pagado a" className={`${campo} w-56`} />
-      <select value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)} className={campo}>
-        <option value="">Categoría…</option>
-        {categorias.map((c) => (
-          <option key={c.id} value={c.id}>{c.nombre}</option>
-        ))}
-      </select>
-      <input value={valor} onChange={(e) => setValor(e.target.value)} type="number" min={1} placeholder="Valor" className={`${campo} w-32`} />
-      <input value={fecha} onChange={(e) => setFecha(e.target.value)} type="date" className={campo} />
-      <input
-        value={descripcion}
-        onChange={(e) => setDescripcion(e.target.value)}
-        placeholder="Descripción (opcional)"
-        className={`${campo} w-56`}
-      />
+      <label className={etiqueta}>
+        <span>Pagado a</span>
+        <input
+          value={beneficiario}
+          onChange={(e) => setBeneficiario(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Categoría</span>
+        <select
+          value={categoriaId}
+          onChange={(e) => setCategoriaId(e.target.value)}
+          className={`${campo} w-full`}
+        >
+          <option value="">Seleccione</option>
+          {categorias.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.nombre}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className={etiqueta}>
+        <span>Valor</span>
+        <input
+          value={valor}
+          onChange={(e) => setValor(e.target.value)}
+          type="number"
+          min={1}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Fecha</span>
+        <input
+          value={fecha}
+          onChange={(e) => setFecha(e.target.value)}
+          type="date"
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Descripción (opcional)</span>
+        <input
+          value={descripcion}
+          onChange={(e) => setDescripcion(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
       <button type="submit" disabled={accion.isExecuting} className={boton}>
         {accion.isExecuting ? 'Registrando…' : 'Registrar egreso'}
       </button>
-      {accion.hasErrored && <p className="w-full text-xs text-error">{accion.result.serverError}</p>}
-      {accion.hasSucceeded && <p className="w-full text-xs text-exito">Egreso registrado ✓</p>}
+      {accion.hasErrored && (
+        <p className="text-menudo text-error sm:col-span-2 lg:col-span-4">
+          {accion.result.serverError}
+        </p>
+      )}
+      {accion.hasSucceeded && (
+        <p className="text-menudo text-exito sm:col-span-2 lg:col-span-4">Egreso registrado</p>
+      )}
     </form>
   )
 }
@@ -144,7 +250,7 @@ export function FilaRecibo({ recibo }: { recibo: ReciboCaja }) {
   const accionPDF = useAction(generarPDFRecibo)
 
   return (
-    <tr className="border-b border-panel-borde/50">
+    <tr className="border-b border-borde">
       <td className="py-2 pr-3">{recibo.consecutivo}</td>
       <td className="py-2 pr-3">{recibo.fecha}</td>
       <td className="py-2 pr-3">{recibo.beneficiario}</td>
@@ -170,7 +276,7 @@ export function FilaRecibo({ recibo }: { recibo: ReciboCaja }) {
         >
           {accionPDF.isExecuting ? 'Encolando…' : 'Generar PDF'}
         </button>
-        {accionPDF.hasSucceeded && <span className="text-xs text-exito">En proceso ✓</span>}
+        {accionPDF.hasSucceeded && <span className="text-menudo text-exito">En proceso</span>}
       </td>
     </tr>
   )
@@ -181,7 +287,7 @@ export function FilaEgreso({ egreso }: { egreso: Egreso }) {
   const accionPDF = useAction(generarPDFEgreso)
 
   return (
-    <tr className="border-b border-panel-borde/50">
+    <tr className="border-b border-borde">
       <td className="py-2 pr-3">{egreso.consecutivo}</td>
       <td className="py-2 pr-3">{egreso.fecha}</td>
       <td className="py-2 pr-3">{egreso.beneficiario}</td>
@@ -207,7 +313,7 @@ export function FilaEgreso({ egreso }: { egreso: Egreso }) {
         >
           {accionPDF.isExecuting ? 'Encolando…' : 'Generar PDF'}
         </button>
-        {accionPDF.hasSucceeded && <span className="text-xs text-exito">En proceso ✓</span>}
+        {accionPDF.hasSucceeded && <span className="text-menudo text-exito">En proceso</span>}
       </td>
     </tr>
   )

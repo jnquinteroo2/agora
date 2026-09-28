@@ -1,4 +1,6 @@
-import Link from 'next/link'
+import { BookOpen, CalendarDays, Presentation } from 'lucide-react'
+import { EncabezadoDeInicio, AccesosRapidos } from '@/src/ui/inicio-panel'
+import { EstadoVacio } from '@/src/ui/estado-vacio'
 import { eq } from 'drizzle-orm'
 import { obtenerUsuarioActual } from '@/src/auth/sesion'
 import { db, conContextoRLS } from '@/src/datos/cliente'
@@ -8,13 +10,26 @@ export default async function InicioDocente() {
   const usuario = await obtenerUsuarioActual()
   if (!usuario) return null
 
-  const [anioActivo] = await db.select().from(anioLectivo).where(eq(anioLectivo.activo, true)).limit(1)
+  const [anioActivo] = await db
+    .select()
+    .from(anioLectivo)
+    .where(eq(anioLectivo.activo, true))
+    .limit(1)
 
   if (!anioActivo) {
     return (
-      <p className="text-panel-secundario">
-        No hay un año lectivo activo configurado todavía. Contacte a coordinación académica.
-      </p>
+      <div className="flex flex-col gap-10">
+        <EncabezadoDeInicio
+          perfil="Profesor"
+          descripcion="Aquí encontrará sus asignaciones, la planilla de notas y el observador."
+        />
+        <EstadoVacio
+          como="h2"
+          icono={<CalendarDays strokeWidth={1.5} />}
+          titulo="No hay un año lectivo activo"
+          descripcion="Cuando la coordinación académica active el año lectivo, aquí aparecerán sus asignaciones."
+        />
+      </div>
     )
   }
 
@@ -33,30 +48,29 @@ export default async function InicioDocente() {
   )
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="font-display text-2xl">Mis asignaciones — {anioActivo.nombre}</h1>
+    <div className="flex flex-col gap-10">
+      <EncabezadoDeInicio
+        perfil="Profesor"
+        descripcion={`Sus asignaciones en el año lectivo ${anioActivo.nombre}. Abra una para registrar notas, fallas y descriptores.`}
+      />
 
       {asignaciones.length === 0 ? (
-        <p className="text-panel-secundario">Todavía no tiene asignaturas asignadas para este año lectivo.</p>
+        <EstadoVacio
+          como="h2"
+          icono={<Presentation strokeWidth={1.5} />}
+          titulo="Todavía no tiene asignaturas asignadas"
+          descripcion="Cuando la coordinación le asigne una materia y un curso para este año lectivo, aparecerán aquí."
+        />
       ) : (
-        <ul className="flex flex-col gap-2">
-          {asignaciones.map((a) => (
-            <li key={a.asignacion.id}>
-              <Link
-                href={`/panel/docente/planilla/${a.asignacion.id}`}
-                className="flex items-center justify-between rounded-sm border border-panel-borde bg-panel-lateral/40 px-4 py-3 hover:border-carmin"
-              >
-                <span>
-                  <span className="text-panel-secundario">{a.area.nombre} · </span>
-                  {a.asignatura.nombre}
-                </span>
-                <span className="text-panel-secundario">
-                  {a.curso.nombre} ({a.ciclo.gradoEquivalente})
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <AccesosRapidos
+          titulo="Mis asignaciones"
+          accesos={asignaciones.map((a) => ({
+            href: `/panel/docente/planilla/${a.asignacion.id}`,
+            titulo: a.asignatura.nombre,
+            descripcion: `${a.area.nombre}. ${a.curso.nombre}, ciclo ${a.ciclo.codigo} (${a.ciclo.gradoEquivalente.toLowerCase()}).`,
+            icono: BookOpen,
+          }))}
+        />
       )}
     </div>
   )

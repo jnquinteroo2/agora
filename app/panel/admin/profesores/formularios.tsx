@@ -1,18 +1,24 @@
 'use client'
 
+import {
+  CODIGOS_TIPO_DOCUMENTO,
+  etiquetaTipoDocumento,
+  type TipoDocumento,
+} from '@/src/dominio/documentos'
 import { useState } from 'react'
 import { useAction } from 'next-safe-action/hooks'
 import { crearUsuario, cambiarEstadoUsuario } from '@/src/acciones/personas/persona'
 import { asignarDocente, quitarAsignacionDocente } from '@/src/acciones/matricula/matricula'
-import type { Usuario, Asignatura, Curso } from '@/src/datos/esquema'
-import { campo, boton, botonSecundario } from '@/src/ui/estilos'
+import type { Usuario } from '@/src/datos/esquema'
+import { campo, boton, botonSecundario, etiqueta } from '@/src/ui/estilos'
 
-const TIPOS_DOCUMENTO = ['CC', 'TI', 'CE', 'RC', 'PA', 'NIP'] as const
+interface Opcion {
+  id: string
+  nombre: string
+}
 
-interface Opcion { id: string; nombre: string }
-
-export function FormularioNuevoDocente() {
-  const [tipoDocumento, setTipoDocumento] = useState<(typeof TIPOS_DOCUMENTO)[number]>('CC')
+export function FormularioNuevoDocente({ conKeycloak }: { conKeycloak: boolean }) {
+  const [tipoDocumento, setTipoDocumento] = useState<TipoDocumento>('CC')
   const [numeroDocumento, setNumeroDocumento] = useState('')
   const [primerNombre, setPrimerNombre] = useState('')
   const [primerApellido, setPrimerApellido] = useState('')
@@ -37,11 +43,19 @@ export function FormularioNuevoDocente() {
     <form
       onSubmit={(e) => {
         e.preventDefault()
-        if (!numeroDocumento.trim() || !primerNombre.trim() || !primerApellido.trim() || !correo.trim() || contrasenaInicial.length < 12) return
+        if (
+          !numeroDocumento.trim() ||
+          !primerNombre.trim() ||
+          !primerApellido.trim() ||
+          !correo.trim() ||
+          (!conKeycloak && contrasenaInicial.length < 12)
+        )
+          return
         accion.execute({
           correo: correo.trim(),
           rol: 'docente',
-          contrasenaInicial,
+          sinCorreo: false,
+          contrasenaInicial: conKeycloak ? undefined : contrasenaInicial,
           persona: {
             tipoDocumento,
             numeroDocumento: numeroDocumento.trim(),
@@ -53,42 +67,121 @@ export function FormularioNuevoDocente() {
           },
         })
       }}
-      className="flex flex-wrap gap-2"
+      className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-4"
     >
-      <select value={tipoDocumento} onChange={(e) => setTipoDocumento(e.target.value as typeof tipoDocumento)} className={campo}>
-        {TIPOS_DOCUMENTO.map((t) => (
-          <option key={t} value={t}>{t}</option>
-        ))}
-      </select>
-      <input value={numeroDocumento} onChange={(e) => setNumeroDocumento(e.target.value)} placeholder="N.º documento" className={`${campo} w-36`} />
-      <input value={primerNombre} onChange={(e) => setPrimerNombre(e.target.value)} placeholder="Primer nombre" className={`${campo} w-40`} />
-      <input value={primerApellido} onChange={(e) => setPrimerApellido(e.target.value)} placeholder="Primer apellido" className={`${campo} w-40`} />
-      <input value={segundoApellido} onChange={(e) => setSegundoApellido(e.target.value)} placeholder="Segundo apellido (opcional)" className={`${campo} w-40`} />
-      <input value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="Teléfono (opcional)" className={`${campo} w-36`} />
-      <input value={correo} onChange={(e) => setCorreo(e.target.value)} placeholder="Correo de acceso" className={`${campo} w-56`} />
-      <input
-        value={contrasenaInicial}
-        onChange={(e) => setContrasenaInicial(e.target.value)}
-        placeholder="Contraseña inicial (mín. 12)"
-        className={`${campo} w-56`}
-      />
+      <label className={etiqueta}>
+        <span>Tipo de documento</span>
+        <select
+          value={tipoDocumento}
+          onChange={(e) => setTipoDocumento(e.target.value as typeof tipoDocumento)}
+          className={`${campo} w-full`}
+        >
+          {CODIGOS_TIPO_DOCUMENTO.map((t) => (
+            <option key={t} value={t}>
+              {etiquetaTipoDocumento(t)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className={etiqueta}>
+        <span>Número de documento</span>
+        <input
+          value={numeroDocumento}
+          onChange={(e) => setNumeroDocumento(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Primer nombre</span>
+        <input
+          value={primerNombre}
+          onChange={(e) => setPrimerNombre(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Primer apellido</span>
+        <input
+          value={primerApellido}
+          onChange={(e) => setPrimerApellido(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Segundo apellido (opcional)</span>
+        <input
+          value={segundoApellido}
+          onChange={(e) => setSegundoApellido(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Teléfono (opcional)</span>
+        <input
+          value={telefono}
+          onChange={(e) => setTelefono(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Correo de acceso</span>
+        <input
+          value={correo}
+          onChange={(e) => setCorreo(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
+      {conKeycloak ? (
+        <p className="text-menudo text-texto-secundario">
+          Se enviará una invitación al correo para que el docente defina su contraseña.
+        </p>
+      ) : (
+        <label className={etiqueta}>
+          <span>Contraseña inicial (mínimo 12 caracteres)</span>
+          <input
+            value={contrasenaInicial}
+            onChange={(e) => setContrasenaInicial(e.target.value)}
+            className={`${campo} w-full`}
+          />
+        </label>
+      )}
       <button type="submit" disabled={accion.isExecuting} className={boton}>
         {accion.isExecuting ? 'Registrando…' : 'Registrar docente'}
       </button>
-      {accion.hasErrored && <p className="w-full text-xs text-error">{accion.result.serverError}</p>}
-      {accion.hasSucceeded && <p className="w-full text-xs text-exito">Docente registrado ✓</p>}
+      {accion.hasErrored && (
+        <p className="text-menudo text-error sm:col-span-2 lg:col-span-4">
+          {accion.result.serverError}
+        </p>
+      )}
+      {accion.hasSucceeded && (
+        <p className="text-menudo text-exito sm:col-span-2 lg:col-span-4">
+          {accion.result.data?.invitacion === 'enviada'
+            ? 'Docente registrado. Se envió la invitación a su correo.'
+            : accion.result.data?.invitacion === 'fallida'
+              ? 'Docente registrado, pero la invitación no se pudo enviar. Reenvíela desde Cuentas.'
+              : 'Docente registrado'}
+        </p>
+      )}
     </form>
   )
 }
 
-export function FilaDocente({ docente, nombreCompleto }: { docente: Usuario; nombreCompleto: string }) {
+export function FilaDocente({
+  docente,
+  nombreCompleto,
+}: {
+  docente: Usuario
+  nombreCompleto: string
+}) {
   const [activo, setActivo] = useState(docente.activo)
   const accion = useAction(cambiarEstadoUsuario, {
-    onSuccess: () => setActivo((valorPrevio) => !valorPrevio),
+    onSuccess: ({ data }) => {
+      if (data) setActivo(data.activo)
+    },
   })
 
   return (
-    <tr className="border-b border-panel-borde/50">
+    <tr className="border-b border-borde">
       <td className="py-2 pr-3">{nombreCompleto}</td>
       <td className="py-2 pr-3">{docente.correo}</td>
       <td className="py-2 pr-3">{activo ? 'Activo' : 'Inactivo'}</td>
@@ -130,7 +223,7 @@ export function FormularioAsignarMateria({
 
   if (!anioLectivoId) {
     return (
-      <p className="text-sm text-panel-secundario">
+      <p className="text-nota text-texto-secundario">
         No hay un año lectivo activo. Actívelo en Materias antes de asignar materias a docentes.
       </p>
     )
@@ -143,31 +236,64 @@ export function FormularioAsignarMateria({
         if (!docenteId || !asignaturaId || !cursoId) return
         accion.execute({ anioLectivoId, docenteId, asignaturaId, cursoId })
       }}
-      className="flex flex-wrap gap-2"
+      className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-4"
     >
-      <select value={docenteId} onChange={(e) => setDocenteId(e.target.value)} className={campo}>
-        <option value="">Docente…</option>
-        {docentes.map((d) => (
-          <option key={d.id} value={d.id}>{d.nombre}</option>
-        ))}
-      </select>
-      <select value={asignaturaId} onChange={(e) => setAsignaturaId(e.target.value)} className={campo}>
-        <option value="">Materia…</option>
-        {asignaturas.map((a) => (
-          <option key={a.id} value={a.id}>{a.nombre}</option>
-        ))}
-      </select>
-      <select value={cursoId} onChange={(e) => setCursoId(e.target.value)} className={campo}>
-        <option value="">Curso…</option>
-        {cursos.map((c) => (
-          <option key={c.id} value={c.id}>{c.nombre}</option>
-        ))}
-      </select>
+      <label className={etiqueta}>
+        <span>Docente</span>
+        <select
+          value={docenteId}
+          onChange={(e) => setDocenteId(e.target.value)}
+          className={`${campo} w-full`}
+        >
+          <option value="">Seleccione</option>
+          {docentes.map((d) => (
+            <option key={d.id} value={d.id}>
+              {d.nombre}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className={etiqueta}>
+        <span>Materia</span>
+        <select
+          value={asignaturaId}
+          onChange={(e) => setAsignaturaId(e.target.value)}
+          className={`${campo} w-full`}
+        >
+          <option value="">Seleccione</option>
+          {asignaturas.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.nombre}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className={etiqueta}>
+        <span>Curso</span>
+        <select
+          value={cursoId}
+          onChange={(e) => setCursoId(e.target.value)}
+          className={`${campo} w-full`}
+        >
+          <option value="">Seleccione</option>
+          {cursos.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.nombre}
+            </option>
+          ))}
+        </select>
+      </label>
       <button type="submit" disabled={accion.isExecuting} className={boton}>
         {accion.isExecuting ? 'Asignando…' : 'Asignar'}
       </button>
-      {accion.hasErrored && <p className="w-full text-xs text-error">{accion.result.serverError}</p>}
-      {accion.hasSucceeded && <p className="w-full text-xs text-exito">Asignación creada ✓</p>}
+      {accion.hasErrored && (
+        <p className="text-menudo text-error sm:col-span-2 lg:col-span-4">
+          {accion.result.serverError}
+        </p>
+      )}
+      {accion.hasSucceeded && (
+        <p className="text-menudo text-exito sm:col-span-2 lg:col-span-4">Asignación creada</p>
+      )}
     </form>
   )
 }
@@ -188,15 +314,21 @@ export function FilaAsignacion({
   if (accion.hasSucceeded) return null
 
   return (
-    <tr className="border-b border-panel-borde/50">
+    <tr className="border-b border-borde">
       <td className="py-2 pr-3">{docenteNombre}</td>
       <td className="py-2 pr-3">{asignaturaNombre}</td>
       <td className="py-2 pr-3">{cursoNombre}</td>
       <td className="py-2">
-        <button onClick={() => accion.execute({ id })} disabled={accion.isExecuting} className={botonSecundario}>
+        <button
+          onClick={() => accion.execute({ id })}
+          disabled={accion.isExecuting}
+          className={botonSecundario}
+        >
           {accion.isExecuting ? 'Quitando…' : 'Quitar'}
         </button>
-        {accion.hasErrored && <span className="ml-2 text-xs text-error">{accion.result.serverError}</span>}
+        {accion.hasErrored && (
+          <span className="ml-2 text-menudo text-error">{accion.result.serverError}</span>
+        )}
       </td>
     </tr>
   )

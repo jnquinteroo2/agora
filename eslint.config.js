@@ -1,17 +1,19 @@
-const { FlatCompat } = require('@eslint/eslintrc')
-const tsPlugin = require('@typescript-eslint/eslint-plugin')
-const tsParser = require('@typescript-eslint/parser')
-
-const compat = new FlatCompat()
+const nextCoreWebVitals = require('eslint-config-next/core-web-vitals')
 
 module.exports = [
-  ...compat.extends('next/core-web-vitals'),
+  ...nextCoreWebVitals,
+  {
+    settings: {
+      react: { version: '19.2' },
+    },
+  },
   {
     files: ['**/*.ts', '**/*.tsx'],
-    plugins: { '@typescript-eslint': tsPlugin },
-    parser: tsParser,
-    parserOptions: {
-      project: './tsconfig.json',
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: __dirname,
+      },
     },
     rules: {
       '@typescript-eslint/no-explicit-any': 'error',
@@ -25,12 +27,29 @@ module.exports = [
     },
   },
   {
+    files: ['src/datos/diagnostico-*.ts', 'src/datos/semilla.ts', 'tests/**/*.ts', 'scripts/**/*.mjs'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+  {
+    files: ['src/seo/imagen-og.tsx'],
+    rules: {
+      '@next/next/no-img-element': 'off',
+    },
+  },
+  {
     ignores: [
       '.next/**',
       'node_modules/**',
       'src/datos/migraciones/**',
       'coverage/**',
       'playwright-report/**',
+      'test-results/**',
+      'capturas/**',
+      'graphify-out/**',
+      '.claude/**',
+      'next-env.d.ts',
     ],
   },
 ]

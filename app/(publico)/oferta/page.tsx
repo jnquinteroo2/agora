@@ -3,7 +3,9 @@ import { obtenerOferta, claveOferta, cuentaCiclosPorJornada } from '@/src/datos/
 import { Contenedor } from '@/src/ui/contenedor'
 import { Seccion, TituloDeSeccion, EncabezadoDePagina } from '@/src/ui/seccion'
 import { Migas } from '@/src/ui/migas'
+import { CalendarDays, Sun } from 'lucide-react'
 import { EnlaceBoton } from '@/src/ui/boton'
+import { TarjetaMagica } from '@/src/ui/tarjeta-magica'
 import { EstadoVacio } from '@/src/ui/estado-vacio'
 import { ordenarCiclos } from '@/src/ui/escalera-clei'
 import { obtenerConfiguracion } from '@/src/datos/configuracion-publica'
@@ -70,12 +72,34 @@ export default async function OfertaPage() {
       {hayOferta && completa ? (
         <Seccion aire="md" filete="arriba">
           <Contenedor ancho="amplio" className="flex flex-col gap-8">
-            <p className="equilibrado max-w-[26ch] font-display text-titulo font-light text-tinta">
-              Los {cardinal(peldanos.length)} ciclos están abiertos en jornada {nombresJornadas}.
-            </p>
-            <p className="prosa max-w-medida text-nota leading-relaxed text-piedra">
-              El ciclo de ingreso depende de los estudios ya aprobados, no de la jornada.
-            </p>
+            <div className="flex flex-col gap-3">
+              <TituloDeSeccion>
+                Los {cardinal(peldanos.length)} ciclos, en jornada {nombresJornadas}
+              </TituloDeSeccion>
+              <p className="prosa max-w-medida text-cuerpo leading-relaxed text-texto-secundario">
+                El ciclo de ingreso depende de los estudios ya aprobados, no de la jornada.
+              </p>
+            </div>
+            <ul className="aparece-escalonado grid grid-cols-2 gap-3 md:grid-cols-3">
+              {peldanos.map((c, indice) => (
+                <li key={c.id} style={{ ['--indice' as string]: indice }}>
+                  <TarjetaMagica className="h-full">
+                    <span className="font-mono text-titulo leading-none font-medium text-texto font-tnum">
+                      {c.codigo}
+                    </span>
+                    <span className="flex flex-col gap-0.5">
+                      <span className="sr-only">equivale a</span>
+                      <span className="font-titulo text-rubro text-texto">
+                        {c.gradoEquivalente}
+                      </span>
+                      <span className="text-menudo text-texto-secundario">
+                        {indice + 1} de {peldanos.length}
+                      </span>
+                    </span>
+                  </TarjetaMagica>
+                </li>
+              ))}
+            </ul>
           </Contenedor>
         </Seccion>
       ) : null}
@@ -87,7 +111,7 @@ export default async function OfertaPage() {
               <TituloDeSeccion>
                 {anio ? `Cuadro de oferta ${anio}` : 'Cuadro de oferta'}
               </TituloDeSeccion>
-              <p className="prosa max-w-medida text-nota leading-relaxed text-piedra">
+              <p className="prosa max-w-medida text-nota leading-relaxed text-texto-secundario">
                 No todos los ciclos se abren en todas las jornadas. Cada marca indica un ciclo
                 abierto este año.
               </p>
@@ -96,7 +120,7 @@ export default async function OfertaPage() {
               role="region"
               aria-label="Cuadro de oferta por ciclo y jornada"
               tabIndex={0}
-              className="relative w-full min-w-0 overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-carmin"
+              className="relative w-full min-w-0 overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foco"
             >
               <table className="w-full min-w-[34rem] border-collapse text-nota">
                 <caption className="sr-only">
@@ -104,16 +128,16 @@ export default async function OfertaPage() {
                 </caption>
                 <thead>
                   <tr>
-                    <th scope="col" className="w-1/3 border-b border-tinta pb-3 text-left">
-                      <span className="versalitas text-menudo text-piedra">Ciclo</span>
+                    <th scope="col" className="w-1/3 border-b border-texto pb-3 text-left">
+                      <span className="text-menudo font-semibold text-texto-secundario">Ciclo</span>
                     </th>
                     {jornadas.map((j) => (
                       <th
                         key={j.id}
                         scope="col"
-                        className="border-b border-tinta px-4 pb-3 text-left align-bottom"
+                        className="border-b border-texto px-4 pb-3 text-left align-bottom"
                       >
-                        <span className="font-display text-rubro font-medium text-tinta">
+                        <span className="font-titulo text-rubro font-medium text-texto">
                           {j.nombre}
                         </span>
                       </th>
@@ -125,7 +149,7 @@ export default async function OfertaPage() {
                     <tr key={c.id}>
                       <th
                         scope="row"
-                        className="border-b border-niebla py-4 text-left align-middle"
+                        className="border-b border-borde py-4 text-left align-middle"
                         style={{ ['--nivel' as string]: indice }}
                       >
                         <span
@@ -134,20 +158,25 @@ export default async function OfertaPage() {
                             paddingInlineStart: 'calc(var(--nivel) * clamp(0.5rem, 1.4vw, 1.5rem))',
                           }}
                         >
-                          <span aria-hidden="true" className="h-px w-5 shrink-0 bg-tinta" />
-                          <span className="font-display text-rubro font-medium text-tinta tabular-nums">
+                          <span aria-hidden="true" className="h-px w-5 shrink-0 bg-texto" />
+                          <span className="font-mono text-rubro font-medium text-texto font-tnum">
                             {c.codigo}
                           </span>
-                          <span className="text-menudo text-piedra">{c.gradoEquivalente}</span>
+                          <span className="text-menudo text-texto-secundario">
+                            {c.gradoEquivalente}
+                          </span>
                         </span>
                       </th>
                       {jornadas.map((j) => {
                         const abierto = combinaciones.has(claveOferta(c.id, j.id))
                         return (
-                          <td key={j.id} className="border-b border-niebla px-4 py-4 align-middle">
+                          <td key={j.id} className="border-b border-borde px-4 py-4 align-middle">
                             {abierto ? (
                               <>
-                                <span aria-hidden="true" className="block h-2.5 w-2.5 bg-tinta" />
+                                <span
+                                  aria-hidden="true"
+                                  className="block size-2.5 rounded-full bg-texto"
+                                />
                                 <span className="sr-only">Disponible</span>
                               </>
                             ) : (
@@ -173,46 +202,51 @@ export default async function OfertaPage() {
                 {jornadas.length > 1 ? 'Elegir la jornada' : 'La jornada'}
               </TituloDeSeccion>
               {jornadas.length > 1 ? (
-                <p className="prosa max-w-medida leading-relaxed text-piedra">
+                <p className="prosa max-w-medida leading-relaxed text-texto-secundario">
                   Es la decisión que cambia de un estudiante a otro. El ciclo y el plan de estudios
                   no cambian con la jornada.
                 </p>
               ) : null}
             </div>
 
-            <ul className="flex flex-col border-t border-tinta">
+            <ul className="grid gap-3 md:grid-cols-2">
               {jornadas.map((j) => {
                 const abiertos = cuentaCiclosPorJornada(oferta, j.id)
                 return (
-                  <li
-                    key={j.id}
-                    className="grid gap-x-10 gap-y-4 border-b border-niebla py-7 md:grid-cols-12"
-                  >
-                    <h3 className="font-display text-titulo font-medium text-tinta md:col-span-5">
-                      {j.nombre}
-                    </h3>
-                    <dl className="flex flex-col gap-4 md:col-span-7 md:pt-1.5">
-                      <div className="flex flex-col gap-1">
-                        <dt className="versalitas text-menudo text-piedra">Horario</dt>
-                        {j.detalle ? (
-                          <dd className="prosa max-w-medida leading-relaxed text-tinta">
-                            {j.detalle}
-                          </dd>
+                  <li key={j.id}>
+                    <TarjetaMagica className="h-full">
+                      <span
+                        aria-hidden="true"
+                        className="inline-flex size-10 items-center justify-center rounded-control border border-borde text-texto-secundario"
+                      >
+                        {j.codigo === 'S' ? (
+                          <CalendarDays className="size-5" strokeWidth={1.75} />
                         ) : (
-                          <dd className="prosa max-w-medida leading-relaxed text-piedra">
-                            Se confirma con la institución.
-                          </dd>
+                          <Sun className="size-5" strokeWidth={1.75} />
                         )}
-                      </div>
-                      {!completa ? (
+                      </span>
+                      <h3 className="font-titulo text-titulo font-medium text-texto">{j.nombre}</h3>
+                      <dl className="mt-auto grid gap-4 border-t border-borde pt-4 sm:grid-cols-2">
                         <div className="flex flex-col gap-1">
-                          <dt className="versalitas text-menudo text-piedra">Ciclos abiertos</dt>
-                          <dd className="font-mono font-tnum text-nota text-tinta">
-                            {abiertos} de {peldanos.length}
+                          <dt className="text-menudo text-texto-secundario">Horario</dt>
+                          <dd
+                            className={
+                              j.detalle ? 'text-nota text-texto' : 'text-nota text-texto-secundario'
+                            }
+                          >
+                            {j.detalle ?? 'Se confirma con la institución.'}
                           </dd>
                         </div>
-                      ) : null}
-                    </dl>
+                        <div className="flex flex-col gap-1">
+                          <dt className="text-menudo text-texto-secundario">Ciclos abiertos</dt>
+                          <dd className="text-nota text-texto">
+                            <span className="font-mono font-tnum">{abiertos}</span> de{' '}
+                            <span className="font-mono font-tnum">{peldanos.length}</span>
+                            {anio ? ` en ${anio}` : ''}
+                          </dd>
+                        </div>
+                      </dl>
+                    </TarjetaMagica>
                   </li>
                 )
               })}
@@ -222,7 +256,7 @@ export default async function OfertaPage() {
               <EnlaceBoton href="/admisiones" tono="primario" talla="lg">
                 Iniciar el proceso de admisión
               </EnlaceBoton>
-              <p className="prosa max-w-medida text-nota leading-relaxed text-piedra">
+              <p className="prosa max-w-medida text-nota leading-relaxed text-texto-secundario">
                 {jornadas.length > 1
                   ? 'La jornada se escoge en el formulario y se confirma con la institución.'
                   : 'El cupo se confirma con la institución.'}

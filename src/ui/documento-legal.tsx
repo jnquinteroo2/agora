@@ -36,18 +36,20 @@ export function DocumentoLegal({
       <Seccion aire="md" className="print:py-0">
         <Contenedor ancho="amplio" className="flex flex-col gap-5">
           <div className="print:hidden">{migas}</div>
-          <h1 className="equilibrado font-display text-portada font-medium text-tinta">{titulo}</h1>
+          <h1 className="equilibrado font-titulo text-portada font-medium text-texto">{titulo}</h1>
           {entrada ? (
-            <p className="prosa max-w-medida text-guia leading-relaxed text-piedra">{entrada}</p>
+            <p className="prosa max-w-medida text-guia leading-relaxed text-texto-secundario">
+              {entrada}
+            </p>
           ) : null}
           <dl className="flex flex-wrap gap-x-8 gap-y-2 pt-1 text-nota">
             <div className="flex items-baseline gap-2">
-              <dt className="text-piedra">Versión</dt>
-              <dd className="font-mono font-tnum text-tinta">{version.version}</dd>
+              <dt className="text-texto-secundario">Versión</dt>
+              <dd className="font-mono font-tnum text-texto">{version.version}</dd>
             </div>
             <div className="flex items-baseline gap-2">
-              <dt className="text-piedra">Vigente desde el</dt>
-              <dd className="text-tinta">
+              <dt className="text-texto-secundario">Vigente desde el</dt>
+              <dd className="text-texto">
                 <time dateTime={version.vigenteDesde}>{fechaLarga(fechaDeVigencia(version))}</time>
               </dd>
             </div>
@@ -58,16 +60,16 @@ export function DocumentoLegal({
       <Seccion aire="md" filete="arriba" className="print:border-0 print:py-6">
         <Contenedor ancho="amplio" className="grid gap-10 lg:grid-cols-12 lg:gap-16">
           <nav aria-labelledby="titulo-indice" className="print:hidden lg:col-span-3">
-            <div className="flex flex-col gap-4 lg:sticky lg:top-8">
-              <h2 id="titulo-indice" className="versalitas text-menudo text-piedra">
+            <div className="flex flex-col gap-4 lg:sticky lg:top-24">
+              <h2 id="titulo-indice" className="text-nota font-medium text-texto-secundario">
                 En este documento
               </h2>
-              <ol className="flex flex-col border-l border-niebla">
+              <ol className="flex flex-col border-l border-borde">
                 {apartados.map((apartado) => (
                   <li key={apartado.id}>
                     <a
                       href={`#${apartado.id}`}
-                      className="transicion-ui -ml-px block border-l border-transparent py-1.5 pl-4 text-nota leading-snug text-piedra hover:border-tinta hover:text-tinta"
+                      className="transicion-ui -ml-px block border-l border-transparent py-1.5 pl-4 text-nota leading-snug text-texto-secundario hover:border-texto hover:text-texto"
                     >
                       {apartado.titulo}
                     </a>
@@ -83,15 +85,15 @@ export function DocumentoLegal({
                 key={apartado.id}
                 id={apartado.id}
                 aria-labelledby={`${apartado.id}-titulo`}
-                className="flex scroll-mt-8 flex-col gap-5 border-t border-niebla pt-8 first:border-t-0 first:pt-0 print:break-inside-auto"
+                className="flex scroll-mt-24 flex-col gap-5 border-t border-borde pt-8 first:border-t-0 first:pt-0 print:break-inside-auto"
               >
                 <h2
                   id={`${apartado.id}-titulo`}
-                  className="equilibrado font-display text-titulo font-medium text-tinta print:break-after-avoid"
+                  className="equilibrado font-titulo text-titulo font-medium text-texto print:break-after-avoid"
                 >
                   {apartado.titulo}
                 </h2>
-                <div className="flex max-w-[62ch] flex-col gap-[1.1em] font-display text-[1.25rem] leading-[1.65] text-tinta print:text-[11pt]">
+                <div className="flex max-w-[62ch] flex-col gap-[1.1em] font-titulo text-[1.25rem] leading-[1.65] text-texto print:text-[11pt]">
                   {apartado.contenido}
                 </div>
               </section>
@@ -109,7 +111,7 @@ export function Parrafo({ children }: { children: React.ReactNode }) {
 
 export function Subtitulo({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="pt-2 font-display text-rubro leading-snug font-medium text-tinta print:break-after-avoid">
+    <h3 className="pt-2 font-titulo text-rubro leading-snug font-medium text-texto print:break-after-avoid">
       {children}
     </h3>
   )
@@ -126,7 +128,7 @@ export function Lista({
   return (
     <Elemento
       className={cn(
-        'flex flex-col gap-2 pl-6 marker:text-piedra',
+        'flex flex-col gap-2 pl-6 marker:text-texto-secundario',
         ordenada ? 'list-decimal' : 'list-disc'
       )}
     >
@@ -136,12 +138,12 @@ export function Lista({
 }
 
 export function Norma({ children }: { children: React.ReactNode }) {
-  return <span className="font-sans text-[0.8em] text-piedra">({children})</span>
+  return <span className="font-sans text-[0.8em] text-texto-secundario">({children})</span>
 }
 
 export function EnlaceLegal({ href, children }: { href: string; children: React.ReactNode }) {
   const clase =
-    'transicion-ui underline decoration-piedra decoration-1 underline-offset-4 hover:decoration-tinta'
+    'transicion-ui underline decoration-texto-secundario decoration-1 underline-offset-4 hover:decoration-texto'
   if (href.startsWith('/') || href.startsWith('#')) {
     return (
       <Link href={href as Route} className={clase}>
@@ -188,10 +190,10 @@ export function datosDeContacto(config: ConfiguracionInstitucion | null) {
 export function ListaDeDatos({ datos }: { datos: { termino: string; valor: React.ReactNode }[] }) {
   if (datos.length === 0) return null
   return (
-    <dl className="grid gap-x-6 gap-y-3 border-y border-niebla py-5 sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)]">
+    <dl className="grid gap-x-6 gap-y-3 border-y border-borde py-5 sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)]">
       {datos.map((dato) => (
         <div key={dato.termino} className="contents">
-          <dt className="font-sans text-nota text-piedra sm:pt-1.5">{dato.termino}</dt>
+          <dt className="font-sans text-nota text-texto-secundario sm:pt-1.5">{dato.termino}</dt>
           <dd className="min-w-0">{dato.valor}</dd>
         </div>
       ))}

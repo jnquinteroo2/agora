@@ -1,4 +1,4 @@
-"use server"
+'use server'
 
 import { z } from 'zod'
 import { eq } from 'drizzle-orm'
@@ -46,8 +46,11 @@ export const registrarEgreso = accionSuperadmin
       if (!nuevo) throw new Error('No se pudo registrar el egreso')
 
       await registrarAuditoria(tx, {
-        actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-        accion: 'crear_egreso', entidad: 'egreso', entidadId: nuevo.id,
+        actorId: ctx.usuario.id,
+        actorRol: ctx.usuario.rol,
+        accion: 'crear_egreso',
+        entidad: 'egreso',
+        entidadId: nuevo.id,
       })
 
       return nuevo
@@ -86,8 +89,11 @@ export const anularEgreso = accionSuperadmin
       if (!anulado) throw new Error('No se pudo anular el egreso')
 
       await registrarAuditoria(tx, {
-        actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-        accion: 'anular_egreso', entidad: 'egreso', entidadId: anulado.id,
+        actorId: ctx.usuario.id,
+        actorRol: ctx.usuario.rol,
+        accion: 'anular_egreso',
+        entidad: 'egreso',
+        entidadId: anulado.id,
         diferencia: { motivo: parsedInput.motivo },
       })
 
@@ -100,11 +106,19 @@ const esqGenerarPDF = z.object({ egresoId: z.string().uuid() })
 export const generarPDFEgreso = accionSuperadmin
   .schema(esqGenerarPDF)
   .action(async ({ parsedInput, ctx }) => {
-    const fila = await conContextoRLS(db, { usuarioId: ctx.usuario.id, rol: 'superadmin' }, async (tx) => {
-      const [e] = await tx.select().from(egreso).where(eq(egreso.id, parsedInput.egresoId)).limit(1)
-      if (!e) throw new Error('El egreso indicado no existe')
-      return e
-    })
+    const fila = await conContextoRLS(
+      db,
+      { usuarioId: ctx.usuario.id, rol: 'superadmin' },
+      async (tx) => {
+        const [e] = await tx
+          .select()
+          .from(egreso)
+          .where(eq(egreso.id, parsedInput.egresoId))
+          .limit(1)
+        if (!e) throw new Error('El egreso indicado no existe')
+        return e
+      }
+    )
 
     const trabajoId = await encolarGeneracionPDF({
       tipo: 'comprobante_egreso',

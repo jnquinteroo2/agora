@@ -1,4 +1,4 @@
-"use server"
+'use server'
 
 import { z } from 'zod'
 import { eq, and } from 'drizzle-orm'
@@ -21,7 +21,11 @@ export const generarBoletin = accionDocente
       db,
       { usuarioId: ctx.usuario.id, rol: rolCtx },
       async (tx) => {
-        const [p] = await tx.select().from(periodo).where(eq(periodo.id, parsedInput.periodoId)).limit(1)
+        const [p] = await tx
+          .select()
+          .from(periodo)
+          .where(eq(periodo.id, parsedInput.periodoId))
+          .limit(1)
         if (!p) throw new Error('El periodo indicado no existe')
         return { periodoActual: p }
       }
@@ -31,7 +35,11 @@ export const generarBoletin = accionDocente
       db,
       { usuarioId: ctx.usuario.id, rol: rolCtx, anioLectivoId: periodoActual.anioLectivoId },
       async (tx) => {
-        const [m] = await tx.select().from(matricula).where(eq(matricula.id, parsedInput.matriculaId)).limit(1)
+        const [m] = await tx
+          .select()
+          .from(matricula)
+          .where(eq(matricula.id, parsedInput.matriculaId))
+          .limit(1)
         if (!m) {
           throw new Error('La matrícula indicada no existe o usted no tiene acceso a ella')
         }
@@ -50,7 +58,6 @@ export const generarBoletin = accionDocente
 
     return { trabajoId }
   })
-
 
 const esqGenerarCurso = z.object({
   cursoId: z.string().uuid(),

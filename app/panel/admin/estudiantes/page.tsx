@@ -1,6 +1,7 @@
 import { eq, and } from 'drizzle-orm'
 import { db, conContextoRLS } from '@/src/datos/cliente'
 import { obtenerUsuarioActual } from '@/src/auth/sesion'
+import { env } from '@/src/env'
 import { anioLectivo, curso, matricula, persona } from '@/src/datos/esquema'
 import { tarjeta, tituloTarjeta, encabezadoTabla } from '@/src/ui/estilos'
 import {
@@ -17,7 +18,11 @@ export default async function EstudiantesAdmin() {
     db,
     { usuarioId: usuario.id, rol: 'superadmin' },
     async (tx) => {
-      const [activo] = await tx.select().from(anioLectivo).where(eq(anioLectivo.activo, true)).limit(1)
+      const [activo] = await tx
+        .select()
+        .from(anioLectivo)
+        .where(eq(anioLectivo.activo, true))
+        .limit(1)
 
       if (!activo) return { anioActivo: null, cursos: [], filas: [] }
 
@@ -44,8 +49,8 @@ export default async function EstudiantesAdmin() {
   return (
     <div className="flex flex-col gap-10">
       <div>
-        <h1 className="font-display text-2xl">Estudiantes</h1>
-        <p className="text-sm text-panel-secundario">
+        <h1 className="font-titulo text-titulo font-medium">Estudiantes</h1>
+        <p className="text-nota text-texto-secundario">
           Año lectivo activo: {anioActivo ? anioActivo.nombre : 'ninguno configurado'}
         </p>
       </div>
@@ -57,42 +62,56 @@ export default async function EstudiantesAdmin() {
 
       <section className={tarjeta}>
         <h2 className={tituloTarjeta}>Matricular estudiante ya existente</h2>
-        <p className="mb-2 text-xs text-panel-secundario">
-          Para un estudiante de un año lectivo anterior: búsquelo por documento y asígnele curso en el año activo.
+        <p className="mb-2 text-menudo text-texto-secundario">
+          Para un estudiante de un año lectivo anterior: búsquelo por documento y asígnele curso en
+          el año activo.
         </p>
         <FormularioMatricularExistente anioLectivoId={anioActivo?.id ?? null} cursos={cursos} />
       </section>
 
       <section className={tarjeta}>
         <h2 className={tituloTarjeta}>Matriculados en el año activo ({filas.length})</h2>
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr className={encabezadoTabla}>
-              <th className="py-2">Estudiante</th>
-              <th className="py-2">Documento</th>
-              <th className="py-2">Curso</th>
-              <th className="py-2">Estado</th>
-              <th className="py-2"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {filas.map(({ matricula: m, persona: p }) => (
-              <FilaMatricula
-                key={m.id}
-                matricula={m}
-                nombreEstudiante={`${p.primerNombre} ${p.primerApellido}`}
-                documento={`${p.tipoDocumento} ${p.numeroDocumento}`}
-                cursos={cursos}
-              />
-            ))}
-            {filas.length === 0 && (
-              <tr><td colSpan={5} className="py-3 text-panel-secundario">Sin estudiantes matriculados aún</td></tr>
-            )}
-          </tbody>
-        </table>
+        <div
+          role="region"
+          aria-label="Tabla con desplazamiento horizontal"
+          tabIndex={0}
+          className="-mx-1 overflow-x-auto px-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foco"
+        >
+          <table className="w-full border-collapse text-nota">
+            <thead>
+              <tr className={encabezadoTabla}>
+                <th className="py-2">Estudiante</th>
+                <th className="py-2">Documento</th>
+                <th className="py-2">Curso</th>
+                <th className="py-2">Estado</th>
+                <th className="py-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filas.map(({ matricula: m, persona: p }) => (
+                <FilaMatricula
+                  key={m.id}
+                  matricula={m}
+                  nombreEstudiante={`${p.primerNombre} ${p.primerApellido}`}
+                  documento={`${p.tipoDocumento} ${p.numeroDocumento}`}
+                  cursos={cursos}
+                  conKeycloak={env.AUTH_KEYCLOAK_HABILITADO}
+                />
+              ))}
+              {filas.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="py-3 text-texto-secundario">
+                    Sin estudiantes matriculados aún
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
         {cursosPorId.size === 0 && anioActivo && (
-          <p className="mt-3 text-xs text-panel-secundario">
-            No hay cursos creados en el año activo. Cree al menos uno en Materias antes de matricular.
+          <p className="mt-3 text-menudo text-texto-secundario">
+            No hay cursos creados en el año activo. Cree al menos uno en Materias antes de
+            matricular.
           </p>
         )}
       </section>

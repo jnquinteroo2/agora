@@ -124,6 +124,26 @@ form-action 'self';
 ```
 Sin `unsafe-inline` ni `unsafe-eval`. Los estilos y scripts se ajustan a la política, no al revés.
 
+**CSP de las páginas de Keycloak** (`auth.<dominio>`, configurada en el realm `agora`, no en `middleware.ts`):
+```
+default-src 'self';
+script-src 'self' 'unsafe-inline';
+style-src 'self';
+img-src 'self' data:;
+font-src 'self';
+connect-src 'self';
+frame-src 'self';
+frame-ancestors 'none';
+object-src 'none';
+base-uri 'self';
+form-action 'self' https://<dominio>;
+```
+- **`'unsafe-inline'` en `script-src`, solo en el dominio de Keycloak.** Después de cada envío de formulario, Keycloak inserta desde el servidor un `<script>` con `history.replaceState(...)` cuya URL lleva `tab_id` y `client_data` distintos en cada solicitud (comprobado el 25 de septiembre de 2026 con dos envíos seguidos). Un hash sha256 no sirve para un contenido que cambia, y Keycloak 26.7.4 no admite nonce en las páginas de su realm. Sin `'unsafe-inline'`, la consola registra una violación de CSP y al recargar se reenvía el formulario. Las plantillas del tema `agora` no tienen scripts en línea: el único script en línea es ese. La plataforma (`middleware.ts`) sigue con nonce y sin `'unsafe-inline'` en scripts.
+- **`frame-ancestors 'none'` y `X-Frame-Options: DENY`.** Ninguna página de Keycloak se puede enmarcar. La consola de cuenta, que necesitaba un iframe del mismo origen, está deshabilitada (`IDP-KEYCLOAK.md`, sección 14).
+- **`style-src 'self'`.** Las plantillas del tema no usan estilos en línea.
+
+**Límites de tasa en el borde (Traefik, `infra/traefik/dynamic/security.yml`):** `rate-limit-login` (5 cada 15 minutos por IP, ráfaga 10) en `/api/auth` de la plataforma y en los `POST` de credenciales de Keycloak (`/realms/agora/login-actions`); `rate-limit-global` (100 por minuto, ráfaga 200) en el resto. El exceso responde 429 con `Retry-After`. Se suma al límite propio de la aplicación (`RATE_LIMIT_*`).
+
 ### A06 — Componentes vulnerables y desactualizados
 **Control**:
 - `npm audit` en cada push; falla el pipeline ante severidad alta.
@@ -147,6 +167,14 @@ Sin `unsafe-inline` ni `unsafe-eval`. Los estilos y scripts se ajustan a la pol�
 - Recuperación de contraseña: token de un solo uso, vida de 1 h, invalida sesiones activas, notificación por correo.
 - Política de contraseñas: longitud mínima 12, verificación contra HaveIBeenPwned (k-anonimato). Sin reglas arbitrarias de caracteres.
 - Credenciales generadas por el superadmin con cambio obligatorio en el primer ingreso.
+
+**Con Keycloak (`AUTH_KEYCLOAK_HABILITADO=true`)**, detalle en `IDP-KEYCLOAK.md`, sección 14:
+- Keycloak autentica y la plataforma autoriza: el rol sale siempre de `usuario.rol`.
+- Enlace explícito por `sub`, nunca por correo. En cada ingreso, `databaseHooks.session.create.before` compara el `agora_usuario_id` del token de ID con el usuario resuelto por `(issuer, sub)` y rechaza la sesión si no coincide o si la cuenta está inactiva. El rechazo queda en `auditoria` (`rechazo_ingreso_idp`).
+- Alta por invitación de un solo uso (72 horas). La plataforma nunca conoce la contraseña, salvo la temporal de la excepción "estudiante sin correo", que se muestra una sola vez al administrador.
+- TOTP obligatorio para Superadministrador, Administrador, Secretaría y Contador (acción requerida `CONFIGURE_TOTP` en el alta). El realm no registra la acción `delete_credential`, así que nadie puede quitarse el TOTP desde la consola de su cuenta.
+- La desactivación borra primero las sesiones de la plataforma y luego deshabilita la cuenta y cierra sus sesiones en Keycloak. Si Keycloak falla, la cuenta queda "pendiente de sincronizar" y un trabajo de pg-boss lo reintenta cada 10 minutos. Mientras tanto la plataforma ya la rechaza, porque `usuario.activo` es la última palabra.
+- La cuenta de servicio `plataforma-admin` solo tiene `manage-users` y `view-users` en el realm `agora` (responde 403 a clientes y al realm `master`). La Admin API se usa solo por la red interna `idp-admin`: Traefik no publica `/admin`.
 
 ### A08 — Fallos de integridad en software y datos
 **Control**:

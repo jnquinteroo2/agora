@@ -49,7 +49,7 @@ export default async function InstitucionPage() {
             titulo={legal}
             entrada={
               config?.lema
-                ? `Un colegio de inspiración estoica en Funza. Su lema lo resume: ${config.lema.toLowerCase()}.`
+                ? `Un colegio de inspiración estoica en Funza. Su lema lo resume: «${config.lema.replace(/\.$/, '')}».`
                 : 'Un colegio de inspiración estoica en Funza, Cundinamarca.'
             }
           />
@@ -67,37 +67,37 @@ export default async function InstitucionPage() {
 
           <div className="flex flex-col gap-6 lg:col-span-7">
             <TituloDeSeccion>Las cuatro virtudes del escudo</TituloDeSeccion>
-            <p className="prosa max-w-medida leading-relaxed text-piedra">
+            <p className="prosa max-w-medida leading-relaxed text-texto-secundario">
               El escudo lleva inscritas las cuatro virtudes cardinales del estoicismo, la tradición
               filosófica que da nombre y orientación a la institución.
             </p>
-            <ol className="flex flex-col border-t border-niebla">
+            <ul className="grid grid-cols-2 gap-3">
               {VIRTUDES.map((virtud) => (
                 <li
                   key={virtud}
-                  className="border-b border-niebla py-4 font-display text-titulo font-light text-tinta"
+                  className="rounded-tarjeta border border-borde px-5 py-6 font-titulo text-titulo font-normal text-texto shadow-sutil"
                 >
                   {virtud}
                 </li>
               ))}
-            </ol>
+            </ul>
           </div>
         </Contenedor>
       </Seccion>
 
       <Seccion aire="md" filete="arriba">
-        <Contenedor ancho="amplio" className="grid gap-12 lg:grid-cols-12 lg:gap-16">
-          <div className="flex flex-col gap-4 lg:col-span-7">
+        <Contenedor ancho="amplio" className="grid gap-4 lg:grid-cols-12">
+          <div className="flex flex-col gap-4 rounded-tarjeta border border-borde p-6 shadow-sutil sm:p-8 lg:col-span-7">
             <TituloDeSeccion>Misión</TituloDeSeccion>
-            <p className="prosa max-w-medida leading-relaxed text-tinta">
+            <p className="prosa max-w-medida text-guia text-texto">
               Ofrecer educación formal para jóvenes y adultos bajo el modelo de Ciclos Lectivos
               Especiales Integrados, que permita completar la educación básica y media con calidad,
               flexibilidad horaria y acompañamiento cercano a cada estudiante.
             </p>
           </div>
-          <div className="flex flex-col gap-4 lg:col-span-5">
+          <div className="flex flex-col gap-4 rounded-tarjeta border border-borde p-6 sm:p-8 lg:col-span-5">
             <TituloDeSeccion>Visión</TituloDeSeccion>
-            <p className="prosa max-w-medida leading-relaxed text-piedra">
+            <p className="prosa max-w-medida text-cuerpo leading-relaxed text-texto-secundario">
               Ser reconocida en Funza y Cundinamarca como una institución de puertas abiertas para
               quienes retoman sus estudios, con procesos académicos y administrativos claros,
               documentados y accesibles.
@@ -112,14 +112,14 @@ export default async function InstitucionPage() {
             {direccion.length > 0 ? (
               <div className="flex flex-col gap-6">
                 <TituloDeSeccion>Rectoría y dirección</TituloDeSeccion>
-                <dl className="grid gap-px bg-niebla sm:grid-cols-2">
+                <dl className="grid gap-3 sm:grid-cols-2">
                   {direccion.map((persona) => (
                     <div
                       key={persona.termino}
-                      className="flex flex-col gap-1 bg-hueso pt-5 pr-6 pb-6"
+                      className="flex flex-col gap-1.5 rounded-tarjeta border border-borde p-6"
                     >
-                      <dt className="versalitas text-menudo text-piedra">{persona.termino}</dt>
-                      <dd className="font-display text-rubro text-tinta">{persona.valor}</dd>
+                      <dt className="text-nota text-texto-secundario">{persona.termino}</dt>
+                      <dd className="font-titulo text-rubro text-texto">{persona.valor}</dd>
                     </div>
                   ))}
                 </dl>
@@ -129,14 +129,14 @@ export default async function InstitucionPage() {
             {datos.length > 0 ? (
               <div className="flex flex-col gap-6">
                 <TituloDeSeccion>Datos institucionales</TituloDeSeccion>
-                <dl className="flex max-w-texto flex-col border-t border-niebla">
+                <dl className="flex max-w-texto flex-col border-t border-borde">
                   {datos.map((dato) => (
                     <div
                       key={dato.termino}
-                      className="flex items-baseline justify-between gap-6 border-b border-niebla py-3"
+                      className="flex items-baseline justify-between gap-6 border-b border-borde py-3"
                     >
-                      <dt className="text-nota text-piedra">{dato.termino}</dt>
-                      <dd className="font-mono font-tnum text-nota text-tinta">{dato.valor}</dd>
+                      <dt className="text-nota text-texto-secundario">{dato.termino}</dt>
+                      <dd className="font-mono font-tnum text-nota text-texto">{dato.valor}</dd>
                     </div>
                   ))}
                 </dl>

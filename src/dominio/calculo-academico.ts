@@ -1,4 +1,3 @@
-
 export interface BandaEscala {
   nivel: string
   desde: number

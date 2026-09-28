@@ -1,4 +1,4 @@
-"use server"
+'use server'
 
 import { z } from 'zod'
 import { eq, and } from 'drizzle-orm'
@@ -27,7 +27,11 @@ export const registrarCalificacion = accionDocente
       db,
       { usuarioId: ctx.usuario.id, rol: rolCtx },
       async (tx) => {
-        const [p] = await tx.select().from(periodo).where(eq(periodo.id, parsedInput.periodoId)).limit(1)
+        const [p] = await tx
+          .select()
+          .from(periodo)
+          .where(eq(periodo.id, parsedInput.periodoId))
+          .limit(1)
         if (!p) throw new Error('El periodo indicado no existe')
 
         const bandas = await tx
@@ -95,7 +99,9 @@ export const registrarCalificacion = accionDocente
             .returning()
 
           if (!actualizada) {
-            throw new Error('No se pudo actualizar la calificación (verifique permisos y estado del periodo)')
+            throw new Error(
+              'No se pudo actualizar la calificación (verifique permisos y estado del periodo)'
+            )
           }
           fila = actualizada
 
@@ -125,7 +131,9 @@ export const registrarCalificacion = accionDocente
             .returning()
 
           if (!nueva) {
-            throw new Error('No se pudo registrar la calificación (verifique permisos y estado del periodo)')
+            throw new Error(
+              'No se pudo registrar la calificación (verifique permisos y estado del periodo)'
+            )
           }
           fila = nueva
         }

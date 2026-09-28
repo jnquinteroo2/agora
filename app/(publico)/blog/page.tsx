@@ -41,7 +41,7 @@ export default async function BlogPage() {
               {entradas.map((n) => (
                 <li
                   key={n.id}
-                  className="border-b border-niebla first:border-t first:border-t-tinta"
+                  className="border-b border-borde first:border-t first:border-t-texto"
                 >
                   <Link
                     href={`/blog/${n.slug}` as Route}
@@ -49,7 +49,7 @@ export default async function BlogPage() {
                   >
                     <time
                       dateTime={fechaMaquina(n.creadoEn)}
-                      className="versalitas text-menudo text-piedra md:col-span-3 md:pt-2"
+                      className="text-nota text-texto-secundario md:col-span-3 md:pt-2"
                     >
                       {fechaLarga(n.creadoEn)}
                     </time>
@@ -60,17 +60,17 @@ export default async function BlogPage() {
                           : 'flex flex-col gap-2 md:col-span-9'
                       }
                     >
-                      <h2 className="equilibrado font-display text-titulo font-medium text-tinta decoration-carmin underline-offset-4 group-hover:underline">
+                      <h2 className="equilibrado font-titulo text-titulo font-medium text-texto decoration-acento-texto decoration-2 underline-offset-[6px] group-hover:underline">
                         {n.titulo}
                       </h2>
                       {n.subtitulo ? (
-                        <p className="prosa max-w-medida leading-relaxed text-piedra">
+                        <p className="prosa max-w-medida leading-relaxed text-texto-secundario">
                           {n.subtitulo}
                         </p>
                       ) : null}
                     </div>
                     {n.metaImgId ? (
-                      <div className="relative aspect-[3/2] overflow-hidden bg-niebla md:col-span-4">
+                      <div className="relative aspect-[3/2] overflow-hidden rounded-tarjeta border border-borde md:col-span-4">
                         <Image
                           src={`/api/galeria/imagen/${n.metaImgId}`}
                           alt=""

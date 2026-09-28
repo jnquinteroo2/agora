@@ -1,4 +1,4 @@
-"use server"
+'use server'
 
 import { z } from 'zod'
 import { eq } from 'drizzle-orm'
@@ -52,8 +52,11 @@ export const registrarRecibo = accionSuperadmin
       if (!nuevo) throw new Error('No se pudo registrar el recibo de caja')
 
       await registrarAuditoria(tx, {
-        actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-        accion: 'crear_recibo', entidad: 'recibo_caja', entidadId: nuevo.id,
+        actorId: ctx.usuario.id,
+        actorRol: ctx.usuario.rol,
+        accion: 'crear_recibo',
+        entidad: 'recibo_caja',
+        entidadId: nuevo.id,
       })
 
       return nuevo
@@ -92,8 +95,11 @@ export const anularRecibo = accionSuperadmin
       if (!anulado) throw new Error('No se pudo anular el recibo')
 
       await registrarAuditoria(tx, {
-        actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-        accion: 'anular_recibo', entidad: 'recibo_caja', entidadId: anulado.id,
+        actorId: ctx.usuario.id,
+        actorRol: ctx.usuario.rol,
+        accion: 'anular_recibo',
+        entidad: 'recibo_caja',
+        entidadId: anulado.id,
         diferencia: { motivo: parsedInput.motivo },
       })
 
@@ -106,11 +112,19 @@ const esqGenerarPDF = z.object({ reciboId: z.string().uuid() })
 export const generarPDFRecibo = accionSuperadmin
   .schema(esqGenerarPDF)
   .action(async ({ parsedInput, ctx }) => {
-    const recibo = await conContextoRLS(db, { usuarioId: ctx.usuario.id, rol: 'superadmin' }, async (tx) => {
-      const [r] = await tx.select().from(reciboCaja).where(eq(reciboCaja.id, parsedInput.reciboId)).limit(1)
-      if (!r) throw new Error('El recibo indicado no existe')
-      return r
-    })
+    const recibo = await conContextoRLS(
+      db,
+      { usuarioId: ctx.usuario.id, rol: 'superadmin' },
+      async (tx) => {
+        const [r] = await tx
+          .select()
+          .from(reciboCaja)
+          .where(eq(reciboCaja.id, parsedInput.reciboId))
+          .limit(1)
+        if (!r) throw new Error('El recibo indicado no existe')
+        return r
+      }
+    )
 
     const trabajoId = await encolarGeneracionPDF({
       tipo: 'recibo_caja',

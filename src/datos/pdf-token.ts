@@ -58,9 +58,8 @@ export function validarTokenRenderPDF(
   const partes = payload.split(':')
   if (partes.length !== 6) throw new Error('Token de renderizado inválido')
 
-  const [tipoToken, entidadIdToken, periodoIdToken, solicitanteId, solicitanteRol, expiraTexto] = partes as [
-    string, string, string, string, string, string,
-  ]
+  const [tipoToken, entidadIdToken, periodoIdToken, solicitanteId, solicitanteRol, expiraTexto] =
+    partes as [string, string, string, string, string, string]
 
   if (tipoToken !== esperado.tipo || entidadIdToken !== esperado.entidadId) {
     throw new Error('El token no corresponde a este documento')

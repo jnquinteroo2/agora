@@ -40,7 +40,6 @@ Crear `.dockerignore` en la raíz del repositorio con este contenido:
 ```
 .env
 .env.*
-!.env.example
 .git
 node_modules
 .next
@@ -128,8 +127,17 @@ sudo sh -c 'umask 077
 openssl rand -hex 32 > db-superuser-password
 openssl rand -hex 32 > db-migraciones-password
 openssl rand -hex 32 > db-app-password
-openssl rand -hex 32 > db-backup-password'
+openssl rand -hex 32 > db-backup-password
+openssl rand -hex 32 > keycloak-db-password
+openssl rand -hex 32 > keycloak-db-backup-password
+openssl rand -hex 32 > keycloak-admin-secret'
+sudo chown 10001:10001 /etc/agora/secretos/keycloak-admin-secret
+sudo chmod 400 /etc/agora/secretos/keycloak-admin-secret
 ```
+
+- **`keycloak-admin-secret`**: secreto del cliente `plataforma-admin`. Solo lo montan `web` y `cuentas-idp`, que corren con el UID 10001; con compose sin swarm, un secreto es el archivo del host con sus permisos, por eso su dueño es 10001 y no `root`. No va en `agora-env`.
+
+- **`keycloak-env`** (secreto de Keycloak): se arma con las variables `KC_*`, `PLATAFORMA_URL`, `KEYCLOAK_*` y `KEYCLOAK_SMTP_*` del `.env` de desarrollo (sin sus valores), más `POSTGRES_DB=keycloak`, `POSTGRES_USER=keycloak` y `POSTGRES_PASSWORD`. Lleva `KC_DB_PASSWORD` y `POSTGRES_PASSWORD` iguales al contenido de `keycloak-db-password`, `KC_BOOTSTRAP_ADMIN_*` (administrador temporal), `KEYCLOAK_CLIENTE_SECRETO` (`openssl rand -hex 32`), `KEYCLOAK_ADMIN_CLIENTE_SECRETO` igual al contenido de `keycloak-admin-secret` y `KEYCLOAK_SMTP_*` del proveedor de correo.
 
 - **`BETTER_AUTH_SECRET`**: `openssl rand -base64 48`.
 - **Contraseña inicial del superadministrador**: `openssl rand -base64 18`, que da 24 caracteres. Debe tener al menos 12 caracteres y no aparecer en filtraciones: la plataforma la verifica contra Have I Been Pwned al cambiarla. Se entrega a la persona por un canal separado y se cambia en el primer ingreso.
@@ -137,7 +145,7 @@ openssl rand -hex 32 > db-backup-password'
 
 ### Archivo de entorno `agora-env`
 
-Se arma a partir de `.env.example`, con estos valores:
+Se arma con las variables de la plataforma del `.env` de desarrollo (sin sus valores y sin las de Keycloak, respaldo y siembra de prueba), con estos valores:
 
 - `DATABASE_URL`, `DATABASE_URL_MIGRACIONES` y `PGBOSS_DATABASE_URL` con el host `db` y las contraseñas recién generadas.
 - `BETTER_AUTH_SECRET` nuevo.
@@ -147,6 +155,8 @@ Se arma a partir de `.env.example`, con estos valores:
 - `SMTP_*` del proveedor confirmado en `LANZAMIENTO.md`.
 - `SUPERADMIN_EMAIL` y la contraseña inicial.
 - `PDF_RENDER_BASE_URL=http://web:3000`.
+- Keycloak: `AUTH_KEYCLOAK_HABILITADO=false` en el primer despliegue; `KEYCLOAK_EMISOR=https://auth.DOMINIO/realms/agora`, `KEYCLOAK_URL_INTERNA=http://keycloak:8080/realms/agora` (por la red interna `idp-admin`), `KEYCLOAK_CLIENTE_ID=plataforma-agora` y el mismo `KEYCLOAK_CLIENTE_SECRETO` de `keycloak-env`. **`KEYCLOAK_ADMIN_CLIENTE_SECRETO` no va aquí**: llega solo a `web` y `cuentas-idp` por el secreto `keycloak-admin-secret`.
+- **No incluir** `AGORA_SIEMBRA_DEMO` ni `SEMILLA_PERFILES_*`: son solo de desarrollo.
 
 Permisos: `chmod 600`, dueño `root`.
 
@@ -163,6 +173,7 @@ docker build --platform linux/amd64 -f infra/Dockerfile --target runner \
   --build-arg NEXT_PUBLIC_APP_URL=https://DOMINIO -t agora-web:$VERSION .
 docker build --platform linux/amd64 -f worker/Dockerfile -t agora-pdf:$VERSION .
 docker build --platform linux/amd64 -f infra/backup/Dockerfile -t agora-backup:$VERSION infra/backup
+docker build --platform linux/amd64 -f infra/keycloak/Dockerfile -t agora-keycloak:$VERSION infra/keycloak
 ```
 
 **Verificación obligatoria antes de trasladar:** ninguna imagen puede contener un `.env`.
@@ -179,7 +190,7 @@ Si cualquiera de las dos últimas no imprime `sin .env`, se detiene todo.
 Traslado:
 
 ```bash
-docker save agora-migrate:$VERSION agora-web:$VERSION agora-pdf:$VERSION agora-backup:$VERSION | gzip > agora-$VERSION.tar.gz
+docker save agora-migrate:$VERSION agora-web:$VERSION agora-pdf:$VERSION agora-backup:$VERSION agora-keycloak:$VERSION | gzip > agora-$VERSION.tar.gz
 scp agora-$VERSION.tar.gz usuario@VPS:/tmp/
 ssh usuario@VPS "gunzip -c /tmp/agora-$VERSION.tar.gz | docker load && rm /tmp/agora-$VERSION.tar.gz"
 ```
@@ -202,16 +213,20 @@ export DOMINIO=DOMINIO ACME_EMAIL=CORREO
 export MIGRATE_IMAGE=agora-migrate:$VERSION WEB_IMAGE=agora-web:$VERSION
 export PDF_IMAGE=agora-pdf:$VERSION BACKUP_IMAGE=agora-backup:$VERSION
 
+export KEYCLOAK_IMAGE=agora-keycloak:$VERSION
+
 docker compose -f docker-compose.prod.yml config --quiet
-docker compose -f docker-compose.prod.yml up -d db
+docker compose -f docker-compose.prod.yml up -d db db-keycloak
 docker compose -f docker-compose.prod.yml run --rm migrate
-docker compose -f docker-compose.prod.yml up -d web pdf backup
+docker compose -f docker-compose.prod.yml up -d keycloak
+docker compose -f docker-compose.prod.yml up -d web pdf cuentas-idp backup
 docker compose -f docker-compose.prod.yml up -d proxy
 docker compose -f docker-compose.prod.yml ps
 ```
 
-- El primer arranque de `db` crea los roles con `postgres-init/`.
-- `migrate` aplica todas las migraciones, 0000 a 0010 inclusive.
+- El primer arranque de `db` crea los roles con `postgres-init/`: `01-init.sh` (migraciones, aplicación y respaldo), `02-rol-consulta-rls.sql` (rol sin login `agora_rls_consulta`, dueño de la función `rol_de_persona` que usan las políticas del Administrador) y `03-rol-respaldo.sql` (`agora_backup` de solo lectura, con `pg_read_all_data` y `BYPASSRLS` para que el volcado incluya todas las filas).
+- El primer arranque de `db-keycloak` crea `keycloak_backup` (solo lectura) con `keycloak/postgres-init/01-usuario-respaldo.sh`.
+- `migrate` aplica todas las migraciones, 0000 a 0013 inclusive. La 0013 se detiene si hay conceptos o categorías repetidos (sección 13). La 0012 se detiene con un mensaje claro si falta el rol `agora_rls_consulta` o si `usuario.rol` tiene valores fuera de los siete perfiles; no corrige datos.
 - **Datos iniciales:** `src/datos/semilla.ts` es de desarrollo. Siembra, por ejemplo, el horario de la jornada diurna, que `LANZAMIENTO.md` marca como sin verificar. En producción no se corre tal cual. Qué se carga (superadministrador, configuración institucional, ciclos, jornadas, año lectivo) es una decisión de `LANZAMIENTO.md`, y se carga con esos datos reales.
 
 ---
@@ -282,3 +297,109 @@ Solo cuando **todas** las casillas de `LANZAMIENTO.md` estén cerradas: `SITIO_I
 
 - **Si la nueva versión aplicó migraciones incompatibles** con la anterior: detener `web` y `pdf`, restaurar el volcado previo con `pg_restore --clean --if-exists` y volver a levantar con las imágenes anteriores.
 - **Si el problema es de indexación** (por ejemplo, se activó antes de tiempo): `SITIO_INDEXABLE=false` y reiniciar `web`. Los buscadores dejan de indexar en la siguiente visita; lo ya indexado se retira desde sus herramientas para administradores de sitios.
+
+---
+
+## 12. Keycloak, roles de base y respaldos en una base ya existente
+
+Los scripts de `postgres-init/` solo corren la primera vez que se crea el volumen. En una base que ya existe (como la de desarrollo o un VPS ya desplegado) se aplican a mano, **antes** de `migrate`, y se pueden repetir sin efectos nuevos:
+
+```bash
+docker compose -f docker-compose.prod.yml exec -T db psql -v ON_ERROR_STOP=1 -U postgres -d agora -f /docker-entrypoint-initdb.d/02-rol-consulta-rls.sql
+docker compose -f docker-compose.prod.yml exec -T db psql -v ON_ERROR_STOP=1 -U postgres -d agora -f /docker-entrypoint-initdb.d/03-rol-respaldo.sql
+docker compose -f docker-compose.prod.yml exec -T db-keycloak bash /docker-entrypoint-initdb.d/01-usuario-respaldo.sh
+```
+
+### Cuándo se corre `actualizar-realm-agora.sh`
+
+El realm `agora` solo se importa desde `agora-realm.json` cuando no existe. El script (`infra/keycloak/actualizar-realm.sh`, dentro de la imagen como `/opt/keycloak/bin/actualizar-realm-agora.sh`) lleva a un realm ya creado los cambios que no llegan por importación: perfil de usuario con `agora_usuario_id`, cliente `plataforma-admin` y su cuenta de servicio, *mapper*, tema de correo, vigencia de invitaciones y encabezados de seguridad. Se corre:
+
+- después de reconstruir la imagen de Keycloak con un cambio de realm (en cualquier entorno donde el realm ya exista);
+- después de rotar `KEYCLOAK_ADMIN_CLIENTE_SECRETO`, para que Keycloak tome el secreto nuevo;
+- no hace falta en una instalación nueva: la importación ya trae todo.
+
+```bash
+docker compose -f docker-compose.prod.yml exec keycloak /opt/keycloak/bin/actualizar-realm-agora.sh
+```
+
+Usa el administrador de arranque (`KC_BOOTSTRAP_ADMIN_*`) o, si ya se retiró, `KCADM_USUARIO` y `KCADM_CLAVE` pasadas con `-e`. Es idempotente, no imprime secretos (el del cliente viaja por la entrada estándar de `kcadm`) y borra su archivo de sesión de `kcadm` al terminar.
+
+### Encender Keycloak para las personas
+
+1. Migración de las cuentas existentes, primero en simulacro: `docker compose -f docker-compose.prod.yml exec cuentas-idp node --import tsx/esm src/auth/idp/migrar-cuentas.ts --simulacro`, luego sin `--simulacro` (envía las invitaciones). Requiere el SMTP de Keycloak configurado. Solo `cuentas-idp` (y `web`) tienen el secreto y la red para hablar con la Admin API.
+2. `AUTH_KEYCLOAK_HABILITADO=true` en `agora-env` y `docker compose -f docker-compose.prod.yml up -d --force-recreate web pdf cuentas-idp`.
+3. Volver atrás: la misma bandera en `false` y recrear `web`, `pdf` y `cuentas-idp`.
+
+### Respaldos
+
+`backup` corre un volcado al arrancar y luego todas las noches a las 2:00: `agora` (con `agora_backup`) y `keycloak` (con `keycloak_backup`), cada uno a `pg_dump` en texto plano, `gzip`, cifrado con la clave pública `age` y la misma retención (`BACKUP_RETAIN_DAYS`). Si un volcado falla no deja archivo y el script termina con error. La imagen parte de `postgres:18.6-alpine`, así que `pg_dump` coincide con la versión del servidor.
+
+Restauración probada el 27 de septiembre de 2026 en desarrollo: los dos archivos cifrados, restaurados en un PostgreSQL 18.6 desechable, dieron los mismos conteos que las bases originales (usuarios, personas, auditoría y políticas de la plataforma; usuarios y realms de Keycloak). Para restaurar la plataforma hacen falta antes los roles de `postgres-init/`, porque el volcado incluye las políticas RLS que los nombran.
+
+### Estado de los respaldos y alerta
+
+Después de cada volcado correcto, `backup` escribe la hora en `/backups/estado/agora_backup.ultimo` y `/backups/estado/keycloak_backup.ultimo`. Un volcado fallido no la actualiza. El `HEALTHCHECK` de la imagen (cada 5 minutos) corre `estado-respaldo` y marca el contenedor como `unhealthy` si alguna base no tiene volcado correcto o si el último tiene más de 26 horas (`BACKUP_MAX_HORAS`).
+
+```bash
+docker compose -f docker-compose.prod.yml ps backup
+docker compose -f docker-compose.prod.yml exec backup estado-respaldo
+docker inspect --format '{{json .State.Health}}' $(docker compose -f docker-compose.prod.yml ps -q backup)
+docker compose -f docker-compose.prod.yml exec backup tail -n 20 /var/log/backup.log
+```
+
+`estado-respaldo` imprime, por base, "al día" o "VENCIDO" con la fecha del último volcado correcto, y termina con 1 si alguna falla. Conviene que el monitoreo del VPS avise cuando `backup` deje de estar `healthy`.
+
+### Estado de los workers (`pdf` y `cuentas-idp`)
+
+Los dos workers escriben un latido cada 30 segundos, solo después de que pg-boss consulta la base (`worker/latido.ts`). Su `HEALTHCHECK` (`worker/health.js`, cada 30 s, dos intentos) falla si no hay latido, si el último tiene más de 2 minutos o si no puede hacer `SELECT 1` en la base. Para ver los tres servicios de fondo de una vez, desde el host:
+
+```bash
+cd /opt/agora/infra && ./estado-servicios.sh docker-compose.prod.yml
+```
+
+Imprime, por servicio (`pdf`, `cuentas-idp`, `backup`), `healthy` o `unhealthy` y la última salida de su chequeo, y termina con 1 si alguno no está sano. Probado en desarrollo: al cortar la red de la base, `pdf` y `cuentas-idp` pasaron a `unhealthy` en 41 s ("sin conexión a la base"), y volvieron a `healthy` 26 s después de reconectarlos.
+
+### Límites de tasa en Traefik
+
+- `proxy` usa `traefik:v3.7.13` fijado por digest y carga `traefik/dynamic/security.yml` (cabeceras de seguridad y dos límites de tasa por IP de origen).
+- Routers: `web` (todo el dominio, `rate-limit-global`), `web-auth` (`/api/auth`, `rate-limit-login`), `keycloak` (`auth.DOMINIO` salvo `/admin` y `/realms/master`, `rate-limit-global`) y `keycloak-ingreso` (`POST` a `/realms/agora/login-actions`, `rate-limit-login`).
+- Comprobado el 28 de septiembre de 2026 con la configuración de producción (el mismo `proxy`, `traefik.yml`, `security.yml` y etiquetas, con servicios de prueba detrás): 20 envíos al login de la plataforma y 20 a Keycloak dieron 10 respuestas 200 y 10 respuestas 429 con `Retry-After`; la navegación y los recursos de Keycloak siguieron en 200 y `/admin` en 404.
+- Revisión rápida en el VPS: `docker compose -f docker-compose.prod.yml logs proxy | grep -i error` no debe mostrar errores del proveedor `file`; si `security.yml` no carga, ningún router con `@file` funciona.
+
+### Dónde pueden conectarse los usuarios de respaldo
+
+- `backup` solo está en la red interna `respaldo` (subred fija `10.250.50.0/28`), compartida con `db` y `db-keycloak`, y no en `internal`, `idp` ni `edge`.
+- `db` y `db-keycloak` usan `infra/postgres/pg_hba.conf` (`-c hba_file=/etc/postgresql/pg_hba.conf`): `agora_backup` y `keycloak_backup` solo entran desde `10.250.50.0/28`, y desde cualquier otra dirección se rechazan antes de pedir la contraseña. Los demás usuarios siguen igual que antes (`scram-sha-256`).
+- Sus contraseñas van en los secretos `db-backup-password` y `keycloak-db-backup-password`, montados solo en la base correspondiente y en `backup`. Ninguna va en `agora-env`.
+- Comprobado en desarrollo: `agora_backup` rechazado desde `internal` (donde están `web` y `pdf`) y desde el puerto publicado en el host; `keycloak_backup` rechazado desde `idp` (donde está `keycloak`); desde `respaldo`, los dos se conectan en solo lectura (un `CREATE TABLE` falla).
+
+---
+
+## 13. Conceptos de ingreso y categorías de egreso repetidos (antes de la migración 0013)
+
+La migración `0013` crea un índice único por nombre (solo filas vigentes) en `concepto_ingreso` y `categoria_egreso`, y se detiene si ya hay repetidos. Si se detiene:
+
+1. **Revisar primero qué depende de los repetidos.** Si hay recibos, egresos o planes de cobro reales que apuntan a ellos, el script los reasigna a la fila que se conserva (la más antigua de cada nombre). Revisarlo con la institución antes de seguir:
+
+```sql
+SELECT c.nombre, count(DISTINCT p.id) AS planes, count(DISTINCT r.id) AS recibos
+  FROM concepto_ingreso c
+  LEFT JOIN plan_cobro p ON p.concepto_id = c.id
+  LEFT JOIN recibo_caja r ON r.concepto_id = c.id
+  WHERE c.eliminado_en IS NULL GROUP BY c.nombre;
+SELECT c.nombre, count(e.id) AS egresos
+  FROM categoria_egreso c LEFT JOIN egreso e ON e.categoria_id = c.id
+  WHERE c.eliminado_en IS NULL GROUP BY c.nombre;
+```
+
+2. Respaldo manual antes de tocar datos (sección 11).
+3. Ejecutar el script como superusuario. Todo va en una transacción y termina mostrando las repeticiones que queden (debe salir vacío):
+
+```bash
+docker compose -f docker-compose.prod.yml cp postgres/deduplicar-catalogos-financieros.sql db:/tmp/deduplicar.sql
+docker compose -f docker-compose.prod.yml exec -T db psql -v ON_ERROR_STOP=1 -U postgres -d agora -f /tmp/deduplicar.sql
+```
+
+4. `docker compose -f docker-compose.prod.yml run --rm migrate`.
+
+En desarrollo, el 27 de septiembre de 2026, quedaron 4 conceptos (de 24) y 10 categorías (de 60); no había recibos, egresos ni planes de cobro que dependieran de ellos.

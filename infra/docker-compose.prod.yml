@@ -12,7 +12,7 @@ services:
     restart: "no"
 
   proxy:
-    image: traefik:3
+    image: traefik:v3.7.13@sha256:24841fe2de7304c149343d877d2923b4c8800a38ba015dea9174c23b20e344a0
     ports:
       - "80:80"
       - "443:443"
@@ -30,6 +30,10 @@ services:
   web:
     image: ${WEB_IMAGE:?WEB_IMAGE requerida}
     env_file: /run/secrets/agora-env
+    environment:
+      KEYCLOAK_ADMIN_CLIENTE_SECRETO_FILE: /run/secrets/keycloak-admin-secret
+    secrets:
+      - keycloak-admin-secret
     depends_on:
       db:
         condition: service_healthy
@@ -38,11 +42,13 @@ services:
     networks:
       - edge
       - internal
+      - idp-admin
     restart: always
     read_only: true
     tmpfs:
       - /tmp
-    user: "1001:1001"
+      - /app/.next/cache:uid=10001,gid=10001,mode=0700
+    user: "10001:10001"
     security_opt:
       - no-new-privileges:true
     deploy:
@@ -51,17 +57,24 @@ services:
           cpus: "2"
           memory: 1G
     volumes:
-      - storage:/var/agora/storage:ro
+      - storage:/var/agora/storage
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.web.rule=Host(`${DOMINIO:?}`)"
       - "traefik.http.routers.web.entrypoints=websecure"
       - "traefik.http.routers.web.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.web.middlewares=security-headers@file"
+      - "traefik.http.routers.web.middlewares=security-headers@file,rate-limit-global@file"
+      - "traefik.http.routers.web.service=web"
+      - "traefik.http.routers.web-auth.rule=Host(`${DOMINIO:?}`) && PathPrefix(`/api/auth`)"
+      - "traefik.http.routers.web-auth.entrypoints=websecure"
+      - "traefik.http.routers.web-auth.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.web-auth.middlewares=security-headers@file,rate-limit-login@file"
+      - "traefik.http.routers.web-auth.service=web"
       - "traefik.http.services.web.loadbalancer.server.port=3000"
 
   db:
     image: postgres:18-alpine
+    command: ["postgres", "-c", "hba_file=/etc/postgresql/pg_hba.conf"]
     environment:
       POSTGRES_DB: agora
       POSTGRES_USER: postgres
@@ -76,10 +89,12 @@ services:
       - db-app-password
       - db-backup-password
     volumes:
+      - ./postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
       - db_data:/var/lib/postgresql
       - ./postgres-init:/docker-entrypoint-initdb.d:ro
     networks:
       - internal
+      - respaldo
     restart: always
     security_opt:
       - no-new-privileges:true
@@ -120,16 +135,123 @@ services:
     volumes:
       - storage:/var/agora/storage
 
+  cuentas-idp:
+    image: ${PDF_IMAGE:?PDF_IMAGE requerida}
+    command: ["node", "--import", "tsx/esm", "worker/idp.ts"]
+    env_file: /run/secrets/agora-env
+    environment:
+      KEYCLOAK_ADMIN_CLIENTE_SECRETO_FILE: /run/secrets/keycloak-admin-secret
+    secrets:
+      - keycloak-admin-secret
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - internal
+      - idp-admin
+    restart: always
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+
+  db-keycloak:
+    image: postgres:18.6-alpine@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873
+    command: ["postgres", "-c", "hba_file=/etc/postgresql/pg_hba.conf"]
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD_FILE: /run/secrets/keycloak-db-password
+      KEYCLOAK_BACKUP_DB_PASSWORD_FILE: /run/secrets/keycloak-db-backup-password
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    secrets:
+      - keycloak-db-password
+      - keycloak-db-backup-password
+    volumes:
+      - ./postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      - db_keycloak_data:/var/lib/postgresql
+      - ./keycloak/postgres-init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - idp
+      - respaldo
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  keycloak:
+    image: ${KEYCLOAK_IMAGE:?KEYCLOAK_IMAGE requerida}
+    env_file: /run/secrets/keycloak-env
+    environment:
+      KC_HOSTNAME: https://auth.${DOMINIO:?}
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+      KC_DB_URL: jdbc:postgresql://db-keycloak:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      PLATAFORMA_URL: https://${DOMINIO:?}
+      KEYCLOAK_SSL_REQUERIDO: external
+    depends_on:
+      db-keycloak:
+        condition: service_healthy
+    networks:
+      - edge
+      - idp
+      - idp-admin
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 1536M
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=agora-prod_edge"
+      - "traefik.http.routers.keycloak.rule=Host(`auth.${DOMINIO:?}`) && !PathPrefix(`/admin`) && !PathPrefix(`/realms/master`)"
+      - "traefik.http.routers.keycloak.entrypoints=websecure"
+      - "traefik.http.routers.keycloak.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.keycloak.middlewares=security-headers@file,rate-limit-global@file"
+      - "traefik.http.routers.keycloak.service=keycloak"
+      - "traefik.http.routers.keycloak-ingreso.rule=Host(`auth.${DOMINIO:?}`) && PathPrefix(`/realms/agora/login-actions`) && Method(`POST`)"
+      - "traefik.http.routers.keycloak-ingreso.entrypoints=websecure"
+      - "traefik.http.routers.keycloak-ingreso.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.keycloak-ingreso.middlewares=security-headers@file,rate-limit-login@file"
+      - "traefik.http.routers.keycloak-ingreso.service=keycloak"
+      - "traefik.http.services.keycloak.loadbalancer.server.port=8080"
+
   backup:
     image: ${BACKUP_IMAGE:?BACKUP_IMAGE requerida}
     secrets:
       - db-backup-password
+      - keycloak-db-backup-password
       - backup-age-key
     depends_on:
       db:
         condition: service_healthy
+      db-keycloak:
+        condition: service_healthy
     networks:
-      - internal
+      - respaldo
     restart: always
     volumes:
       - backups:/backups
@@ -139,6 +261,10 @@ services:
       PGDATABASE: agora
       PGUSER: agora_backup
       PGPASSWORD_FILE: /run/secrets/db-backup-password
+      KEYCLOAK_PGHOST: db-keycloak
+      KEYCLOAK_PGDATABASE: keycloak
+      KEYCLOAK_PGUSER: keycloak_backup
+      KEYCLOAK_PGPASSWORD_FILE: /run/secrets/keycloak-db-backup-password
       BACKUP_RETAIN_DAYS: 30
 
 networks:
@@ -147,9 +273,22 @@ networks:
   internal:
     driver: bridge
     internal: true
+  idp:
+    driver: bridge
+    internal: true
+  idp-admin:
+    driver: bridge
+    internal: true
 
+  respaldo:
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: 10.250.50.0/28
 volumes:
   db_data:
+  db_keycloak_data:
   storage:
   backups:
   traefik_certs:
@@ -167,3 +306,11 @@ secrets:
     file: /run/secrets/agora-env
   backup-age-key:
     file: /run/secrets/backup-age-key
+  keycloak-db-password:
+    file: /run/secrets/keycloak-db-password
+  keycloak-db-backup-password:
+    file: /run/secrets/keycloak-db-backup-password
+  keycloak-env:
+    file: /run/secrets/keycloak-env
+  keycloak-admin-secret:
+    file: /run/secrets/keycloak-admin-secret

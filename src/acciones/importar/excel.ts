@@ -1,22 +1,33 @@
-"use server"
+'use server'
 
 import * as XLSX from 'xlsx'
 import { z } from 'zod'
+import { CODIGOS_TIPO_DOCUMENTO } from '../../dominio/documentos'
 import { db, conContextoRLS, registrarAuditoria } from '../../datos/cliente'
 import { persona } from '../../datos/esquema'
 import { accionSuperadmin } from '../middleware'
 
 const esqFilaPersona = z.object({
-  tipoDocumento: z.enum(['CC', 'TI', 'CE', 'RC', 'PA', 'NIP']),
+  tipoDocumento: z.enum(CODIGOS_TIPO_DOCUMENTO),
   numeroDocumento: z.string().min(4).max(20),
   primerNombre: z.string().min(1).max(60),
   segundoNombre: z.string().max(60).optional(),
   primerApellido: z.string().min(1).max(60),
   segundoApellido: z.string().max(60).optional(),
-  fechaNacimiento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal('')).transform(v => v || undefined),
+  fechaNacimiento: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional()
+    .or(z.literal(''))
+    .transform((v) => v || undefined),
   genero: z.enum(['M', 'F', 'NB', 'NR']).optional(),
   telefono: z.string().max(20).optional(),
-  correo: z.string().email().optional().or(z.literal('')).transform(v => v || undefined),
+  correo: z
+    .string()
+    .email()
+    .optional()
+    .or(z.literal(''))
+    .transform((v) => v || undefined),
   direccion: z.string().max(200).optional(),
   eps: z.string().max(100).optional(),
 })
@@ -34,7 +45,10 @@ export function parsearExcelPersonas(buffer: Buffer): PersonaImportInput[] {
   const hoja = libro.Sheets[libro.SheetNames[0]!]
   if (!hoja) throw new Error('El archivo no contiene hojas')
 
-  const filas = XLSX.utils.sheet_to_json(hoja, { raw: false, defval: '' }) as Record<string, string>[]
+  const filas = XLSX.utils.sheet_to_json(hoja, { raw: false, defval: '' }) as Record<
+    string,
+    string
+  >[]
 
   return filas.map((fila, idx) => {
     const normalizado = {
@@ -43,7 +57,8 @@ export function parsearExcelPersonas(buffer: Buffer): PersonaImportInput[] {
       primerNombre: String(fila['primer_nombre'] ?? fila['primerNombre'] ?? ''),
       segundoNombre: String(fila['segundo_nombre'] ?? fila['segundoNombre'] ?? '') || undefined,
       primerApellido: String(fila['primer_apellido'] ?? fila['primerApellido'] ?? ''),
-      segundoApellido: String(fila['segundo_apellido'] ?? fila['segundoApellido'] ?? '') || undefined,
+      segundoApellido:
+        String(fila['segundo_apellido'] ?? fila['segundoApellido'] ?? '') || undefined,
       fechaNacimiento: String(fila['fecha_nacimiento'] ?? fila['fechaNacimiento'] ?? ''),
       genero: String(fila['genero'] ?? '').toUpperCase() || undefined,
       telefono: String(fila['telefono'] ?? '') || undefined,
@@ -53,7 +68,7 @@ export function parsearExcelPersonas(buffer: Buffer): PersonaImportInput[] {
     }
     const resultado = esqFilaPersona.safeParse(normalizado)
     if (!resultado.success) {
-      throw new Error(`Fila ${idx + 2}: ${resultado.error.issues.map(i => i.message).join('; ')}`)
+      throw new Error(`Fila ${idx + 2}: ${resultado.error.issues.map((i) => i.message).join('; ')}`)
     }
     return resultado.data
   })
@@ -100,13 +115,18 @@ export const importarPersonas = accionSuperadmin
             if (resultado[0]) creadas++
             else actualizadas++
           } catch (err) {
-            errores.push({ fila: i + 2, mensaje: err instanceof Error ? err.message : 'Error desconocido' })
+            errores.push({
+              fila: i + 2,
+              mensaje: err instanceof Error ? err.message : 'Error desconocido',
+            })
           }
         }
 
         await registrarAuditoria(tx, {
-          actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-          accion: 'importar_personas', entidad: 'persona',
+          actorId: ctx.usuario.id,
+          actorRol: ctx.usuario.rol,
+          accion: 'importar_personas',
+          entidad: 'persona',
           diferencia: { creadas, actualizadas, errores: errores.length },
         })
 

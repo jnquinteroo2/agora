@@ -12,10 +12,10 @@ import {
   inet,
   char,
   index,
+  uniqueIndex,
   unique,
-  primaryKey,
 } from 'drizzle-orm/pg-core'
-import { sql, relations } from 'drizzle-orm'
+import { sql } from 'drizzle-orm'
 
 const uuidv7 = () => sql`uuidv7()`
 const ahora = () => sql`now()`
@@ -156,26 +156,28 @@ export const descriptor = pgTable('descriptor', {
   eliminadoEn: timestamp('eliminado_en', { withTimezone: true }),
 })
 
-export const persona = pgTable('persona', {
-  id: uuid('id').default(uuidv7()).primaryKey(),
-  tipoDocumento: text('tipo_documento').notNull(),
-  numeroDocumento: text('numero_documento').notNull(),
-  primerNombre: text('primer_nombre').notNull(),
-  segundoNombre: text('segundo_nombre'),
-  primerApellido: text('primer_apellido').notNull(),
-  segundoApellido: text('segundo_apellido'),
-  fechaNacimiento: date('fecha_nacimiento'),
-  lugarNacimiento: text('lugar_nacimiento'),
-  genero: text('genero'),
-  telefono: text('telefono'),
-  correo: text('correo'),
-  direccion: text('direccion'),
-  eps: text('eps'),
-  discapacidad: text('discapacidad'),
-  necesidadEdu: text('necesidad_edu'),
-  eliminadoEn: timestamp('eliminado_en', { withTimezone: true }),
-},
-(t) => [unique().on(t.tipoDocumento, t.numeroDocumento)]
+export const persona = pgTable(
+  'persona',
+  {
+    id: uuid('id').default(uuidv7()).primaryKey(),
+    tipoDocumento: text('tipo_documento').notNull(),
+    numeroDocumento: text('numero_documento').notNull(),
+    primerNombre: text('primer_nombre').notNull(),
+    segundoNombre: text('segundo_nombre'),
+    primerApellido: text('primer_apellido').notNull(),
+    segundoApellido: text('segundo_apellido'),
+    fechaNacimiento: date('fecha_nacimiento'),
+    lugarNacimiento: text('lugar_nacimiento'),
+    genero: text('genero'),
+    telefono: text('telefono'),
+    correo: text('correo'),
+    direccion: text('direccion'),
+    eps: text('eps'),
+    discapacidad: text('discapacidad'),
+    necesidadEdu: text('necesidad_edu'),
+    eliminadoEn: timestamp('eliminado_en', { withTimezone: true }),
+  },
+  (t) => [unique().on(t.tipoDocumento, t.numeroDocumento)]
 )
 
 export const usuario = pgTable('usuario', {
@@ -187,6 +189,10 @@ export const usuario = pgTable('usuario', {
   rol: text('rol').notNull(),
   activo: boolean('activo').notNull().default(true),
   primerIngreso: boolean('primer_ingreso').notNull().default(true),
+  sinCorreo: boolean('sin_correo').notNull().default(false),
+  idpPendiente: boolean('idp_pendiente').notNull().default(false),
+  idpIntentos: integer('idp_intentos').notNull().default(0),
+  idpUltimoIntento: timestamp('idp_ultimo_intento', { withTimezone: true }),
   creadoEn: timestamp('creado_en', { withTimezone: true }).notNull().default(ahora()),
   actualizadoEn: timestamp('actualizado_en', { withTimezone: true }).notNull().default(ahora()),
 })
@@ -338,12 +344,20 @@ export const observadorRegistro = pgTable('observador_registro', {
   creadoEn: timestamp('creado_en', { withTimezone: true }).notNull().default(ahora()),
 })
 
-export const conceptoIngreso = pgTable('concepto_ingreso', {
-  id: uuid('id').default(uuidv7()).primaryKey(),
-  nombre: text('nombre').notNull(),
-  descripcion: text('descripcion'),
-  eliminadoEn: timestamp('eliminado_en', { withTimezone: true }),
-})
+export const conceptoIngreso = pgTable(
+  'concepto_ingreso',
+  {
+    id: uuid('id').default(uuidv7()).primaryKey(),
+    nombre: text('nombre').notNull(),
+    descripcion: text('descripcion'),
+    eliminadoEn: timestamp('eliminado_en', { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex('concepto_ingreso_nombre_vigente')
+      .on(t.nombre)
+      .where(sql`${t.eliminadoEn} IS NULL`),
+  ]
+)
 
 export const planCobro = pgTable('plan_cobro', {
   id: uuid('id').default(uuidv7()).primaryKey(),
@@ -391,11 +405,19 @@ export const reciboCaja = pgTable(
   ]
 )
 
-export const categoriaEgreso = pgTable('categoria_egreso', {
-  id: uuid('id').default(uuidv7()).primaryKey(),
-  nombre: text('nombre').notNull(),
-  eliminadoEn: timestamp('eliminado_en', { withTimezone: true }),
-})
+export const categoriaEgreso = pgTable(
+  'categoria_egreso',
+  {
+    id: uuid('id').default(uuidv7()).primaryKey(),
+    nombre: text('nombre').notNull(),
+    eliminadoEn: timestamp('eliminado_en', { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex('categoria_egreso_nombre_vigente')
+      .on(t.nombre)
+      .where(sql`${t.eliminadoEn} IS NULL`),
+  ]
+)
 
 export const egreso = pgTable(
   'egreso',

@@ -58,3 +58,34 @@ export function EscudoDeVirtudes({
     />
   )
 }
+
+export function MarcaAdaptable({
+  lado,
+  className,
+  prioridad = false,
+  alt = '',
+}: {
+  lado: number
+  className?: string
+  prioridad?: boolean
+  alt?: string
+}) {
+  return (
+    <>
+      <Marca
+        variante="color"
+        lado={lado}
+        prioridad={prioridad}
+        alt={alt}
+        className={cn('dark:hidden', className)}
+      />
+      <Marca
+        variante="blanco"
+        lado={lado}
+        prioridad={prioridad}
+        alt={alt}
+        className={cn('hidden dark:block', className)}
+      />
+    </>
+  )
+}

@@ -2,14 +2,16 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from './cn'
 
 const insignia = cva(
-  'versalitas inline-flex items-center rounded-sm border px-2 py-0.5 text-menudo font-medium',
+  'inline-flex items-center gap-1.5 rounded-control border px-2 py-0.5 text-menudo font-medium whitespace-nowrap [&_svg]:size-3.5',
   {
     variants: {
       tono: {
-        neutra: 'border-niebla text-piedra',
-        tinta: 'border-tinta text-tinta',
-        laurel: 'border-laurel text-carmin-hondo',
-        clara: 'border-hueso/30 text-hueso/80',
+        neutra: 'border-borde-control text-texto-secundario',
+        acento: 'border-acento-texto/40 text-acento-texto',
+        exito: 'border-exito/40 text-exito',
+        alerta: 'border-alerta/40 text-alerta',
+        error: 'border-error/40 text-error',
+        info: 'border-info/40 text-info',
       },
     },
     defaultVariants: { tono: 'neutra' },

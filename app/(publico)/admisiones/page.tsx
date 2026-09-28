@@ -44,7 +44,7 @@ export default async function AdmisionesPage() {
               : null
         }
         titulo="Formulario de inscripción"
-        entrada="Al enviar el formulario recibe un número de radicado. Con ese número la institución identifica la solicitud y se comunica con el acudiente registrado para continuar el proceso."
+        entrada="Al enviar el formulario recibe un número de radicado. Con ese número la institución identifica la solicitud y se comunica con el aspirante o, si es menor de edad, con su acudiente para continuar el proceso."
         ciclos={ordenarCiclos(ciclos).map((c) => ({
           id: c.id,
           etiqueta: `Ciclo ${c.codigo} (${c.gradoEquivalente.toLowerCase()})`,
@@ -77,10 +77,10 @@ export default async function AdmisionesPage() {
                 <ul className="flex flex-col gap-2 text-nota">
                   {config.telefono ? (
                     <li>
-                      <span className="text-piedra">Teléfono </span>
+                      <span className="text-texto-secundario">Teléfono </span>
                       <a
                         href={`tel:${config.telefono.replace(/\s+/g, '')}`}
-                        className="transicion-ui font-mono font-tnum text-tinta underline decoration-piedra underline-offset-4 hover:decoration-carmin"
+                        className="transicion-ui font-mono font-tnum text-texto underline decoration-texto-secundario underline-offset-4 hover:decoration-acento-texto"
                       >
                         {config.telefono}
                       </a>
@@ -88,10 +88,10 @@ export default async function AdmisionesPage() {
                   ) : null}
                   {config.correo ? (
                     <li>
-                      <span className="text-piedra">Correo </span>
+                      <span className="text-texto-secundario">Correo </span>
                       <a
                         href={`mailto:${config.correo}`}
-                        className="transicion-ui text-tinta underline decoration-piedra underline-offset-4 hover:decoration-carmin"
+                        className="transicion-ui text-texto underline decoration-texto-secundario underline-offset-4 hover:decoration-acento-texto"
                       >
                         {config.correo}
                       </a>

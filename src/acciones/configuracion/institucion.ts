@@ -1,4 +1,4 @@
-"use server"
+'use server'
 
 import { z } from 'zod'
 import { db, conContextoRLS, registrarAuditoria } from '../../datos/cliente'
@@ -44,8 +44,11 @@ export const guardarConfiguracion = accionSuperadmin
           resultado = nuevo!
         }
         await registrarAuditoria(tx, {
-          actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-          accion: 'guardar', entidad: 'configuracion_institucional', entidadId: resultado.id,
+          actorId: ctx.usuario.id,
+          actorRol: ctx.usuario.rol,
+          accion: 'guardar',
+          entidad: 'configuracion_institucional',
+          entidadId: resultado.id,
         })
         return resultado
       }

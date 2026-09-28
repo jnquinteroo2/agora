@@ -1,11 +1,11 @@
-"use server"
+'use server'
 
 import { z } from 'zod'
 import { eq } from 'drizzle-orm'
 import { db, conContextoRLS, registrarAuditoria } from '../../datos/cliente'
 import { matricula, asignacionDocente, persona } from '../../datos/esquema'
 import { accionSuperadmin } from '../middleware'
-import { esqPersona } from '../personas/persona'
+import { esqPersona } from '../personas/esquemas'
 
 const esqMatricular = z.object({
   anioLectivoId: z.string().uuid(),
@@ -19,15 +19,19 @@ export const matricularEstudiante = accionSuperadmin
   .action(async ({ parsedInput, ctx }) => {
     return conContextoRLS(
       db,
-      { usuarioId: ctx.usuario.id, rol: ctx.usuario.rol as 'superadmin', anioLectivoId: parsedInput.anioLectivoId },
+      {
+        usuarioId: ctx.usuario.id,
+        rol: ctx.usuario.rol as 'superadmin',
+        anioLectivoId: parsedInput.anioLectivoId,
+      },
       async (tx) => {
-        const [nueva] = await tx
-          .insert(matricula)
-          .values(parsedInput)
-          .returning()
+        const [nueva] = await tx.insert(matricula).values(parsedInput).returning()
         await registrarAuditoria(tx, {
-          actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-          accion: 'matricular', entidad: 'matricula', entidadId: nueva!.id,
+          actorId: ctx.usuario.id,
+          actorRol: ctx.usuario.rol,
+          accion: 'matricular',
+          entidad: 'matricula',
+          entidadId: nueva!.id,
         })
         return nueva!
       }
@@ -46,7 +50,11 @@ export const asignarDocente = accionSuperadmin
   .action(async ({ parsedInput, ctx }) => {
     return conContextoRLS(
       db,
-      { usuarioId: ctx.usuario.id, rol: ctx.usuario.rol as 'superadmin', anioLectivoId: parsedInput.anioLectivoId },
+      {
+        usuarioId: ctx.usuario.id,
+        rol: ctx.usuario.rol as 'superadmin',
+        anioLectivoId: parsedInput.anioLectivoId,
+      },
       async (tx) => {
         const [nueva] = await tx
           .insert(asignacionDocente)
@@ -54,14 +62,16 @@ export const asignarDocente = accionSuperadmin
           .onConflictDoNothing()
           .returning()
         await registrarAuditoria(tx, {
-          actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-          accion: 'asignar_docente', entidad: 'asignacion_docente', entidadId: nueva?.id,
+          actorId: ctx.usuario.id,
+          actorRol: ctx.usuario.rol,
+          accion: 'asignar_docente',
+          entidad: 'asignacion_docente',
+          entidadId: nueva?.id,
         })
         return nueva ?? null
       }
     )
   })
-
 
 const esqMatricularNuevo = z.object({
   anioLectivoId: z.string().uuid(),
@@ -74,7 +84,11 @@ export const matricularNuevoEstudiante = accionSuperadmin
   .action(async ({ parsedInput, ctx }) => {
     return conContextoRLS(
       db,
-      { usuarioId: ctx.usuario.id, rol: ctx.usuario.rol as 'superadmin', anioLectivoId: parsedInput.anioLectivoId },
+      {
+        usuarioId: ctx.usuario.id,
+        rol: ctx.usuario.rol as 'superadmin',
+        anioLectivoId: parsedInput.anioLectivoId,
+      },
       async (tx) => {
         const [nuevaPersona] = await tx.insert(persona).values(parsedInput.persona).returning()
 
@@ -88,12 +102,18 @@ export const matricularNuevoEstudiante = accionSuperadmin
           .returning()
 
         await registrarAuditoria(tx, {
-          actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-          accion: 'crear', entidad: 'persona', entidadId: nuevaPersona!.id,
+          actorId: ctx.usuario.id,
+          actorRol: ctx.usuario.rol,
+          accion: 'crear',
+          entidad: 'persona',
+          entidadId: nuevaPersona!.id,
         })
         await registrarAuditoria(tx, {
-          actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-          accion: 'matricular', entidad: 'matricula', entidadId: nuevaMatricula!.id,
+          actorId: ctx.usuario.id,
+          actorRol: ctx.usuario.rol,
+          accion: 'matricular',
+          entidad: 'matricula',
+          entidadId: nuevaMatricula!.id,
         })
 
         return { persona: nuevaPersona!, matricula: nuevaMatricula! }
@@ -123,8 +143,11 @@ export const editarMatricula = accionSuperadmin
           .returning()
         if (!actualizada) throw new Error('La matrícula indicada no existe')
         await registrarAuditoria(tx, {
-          actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-          accion: 'editar', entidad: 'matricula', entidadId: actualizada.id,
+          actorId: ctx.usuario.id,
+          actorRol: ctx.usuario.rol,
+          accion: 'editar',
+          entidad: 'matricula',
+          entidadId: actualizada.id,
         })
         return actualizada
       }
@@ -146,8 +169,11 @@ export const quitarAsignacionDocente = accionSuperadmin
           .returning()
         if (!eliminada) throw new Error('La asignación indicada no existe')
         await registrarAuditoria(tx, {
-          actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-          accion: 'quitar_asignacion', entidad: 'asignacion_docente', entidadId: eliminada.id,
+          actorId: ctx.usuario.id,
+          actorRol: ctx.usuario.rol,
+          accion: 'quitar_asignacion',
+          entidad: 'asignacion_docente',
+          entidadId: eliminada.id,
         })
         return eliminada
       }

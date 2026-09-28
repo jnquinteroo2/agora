@@ -32,5 +32,6 @@ export function validarTokenFormulario(token: string): void {
 
   const ahora = Date.now()
   if (ahora - servido < 3_000) throw new Error('El formulario se envió demasiado rápido')
-  if (ahora - servido > 2 * 60 * 60 * 1_000) throw new Error('El formulario expiró. Recargue la página e intente de nuevo.')
+  if (ahora - servido > 2 * 60 * 60 * 1_000)
+    throw new Error('El formulario expiró. Recargue la página e intente de nuevo.')
 }

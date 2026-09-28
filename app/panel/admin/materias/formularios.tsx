@@ -16,12 +16,14 @@ import {
 } from '@/src/acciones/configuracion/estructura'
 import { eliminarAsignatura, eliminarCurso } from '@/src/acciones/configuracion/estructura'
 import type { AnioLectivo, Periodo, Curso, Asignatura } from '@/src/datos/esquema'
-import { campo, boton, botonSecundario } from '@/src/ui/estilos'
+import { campo, boton, botonSecundario, etiqueta } from '@/src/ui/estilos'
 
 const ESQUEMAS = ['cuatro', 'tres', 'dos', 'anual'] as const
 
-interface Opcion { id: string; nombre: string }
-
+interface Opcion {
+  id: string
+  nombre: string
+}
 
 export function FormularioAnioLectivo() {
   const [nombre, setNombre] = useState('')
@@ -29,7 +31,11 @@ export function FormularioAnioLectivo() {
   const [fin, setFin] = useState('')
 
   const accion = useAction(crearAnioLectivo, {
-    onSuccess: () => { setNombre(''); setInicio(''); setFin('') },
+    onSuccess: () => {
+      setNombre('')
+      setInicio('')
+      setFin('')
+    },
   })
 
   return (
@@ -39,15 +45,42 @@ export function FormularioAnioLectivo() {
         if (!nombre.trim() || !inicio || !fin) return
         accion.execute({ nombre: nombre.trim(), inicio, fin, activo: false })
       }}
-      className="flex flex-wrap gap-2"
+      className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-4"
     >
-      <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre (ej. 2027)" className={`${campo} w-40`} />
-      <input value={inicio} onChange={(e) => setInicio(e.target.value)} type="date" className={campo} />
-      <input value={fin} onChange={(e) => setFin(e.target.value)} type="date" className={campo} />
+      <label className={etiqueta}>
+        <span>Nombre del año lectivo</span>
+        <input
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Fecha de inicio</span>
+        <input
+          value={inicio}
+          onChange={(e) => setInicio(e.target.value)}
+          type="date"
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Fecha de fin</span>
+        <input
+          value={fin}
+          onChange={(e) => setFin(e.target.value)}
+          type="date"
+          className={`${campo} w-full`}
+        />
+      </label>
       <button type="submit" disabled={accion.isExecuting} className={boton}>
         {accion.isExecuting ? 'Creando…' : 'Crear año lectivo'}
       </button>
-      {accion.hasErrored && <p className="w-full text-xs text-error">{accion.result.serverError}</p>}
+      {accion.hasErrored && (
+        <p className="text-menudo text-error sm:col-span-2 lg:col-span-4">
+          {accion.result.serverError}
+        </p>
+      )}
     </form>
   )
 }
@@ -59,10 +92,12 @@ export function FilaAnioLectivo({ anio }: { anio: AnioLectivo }) {
   })
 
   return (
-    <tr className="border-b border-panel-borde/50">
+    <tr className="border-b border-borde">
       <td className="py-2 pr-3">{anio.nombre}</td>
-      <td className="py-2 pr-3">{anio.inicio} a {anio.fin}</td>
-      <td className="py-2 pr-3">{anio.activo ? 'Activo' : '—'}</td>
+      <td className="py-2 pr-3">
+        {anio.inicio} a {anio.fin}
+      </td>
+      <td className="py-2 pr-3">{anio.activo ? 'Activo' : 'Inactivo'}</td>
       <td className="py-2">
         {!anio.activo && (
           <button
@@ -78,11 +113,15 @@ export function FilaAnioLectivo({ anio }: { anio: AnioLectivo }) {
   )
 }
 
-
 export function FormularioJornada() {
   const [codigo, setCodigo] = useState('')
   const [nombre, setNombre] = useState('')
-  const accion = useAction(crearJornada, { onSuccess: () => { setCodigo(''); setNombre('') } })
+  const accion = useAction(crearJornada, {
+    onSuccess: () => {
+      setCodigo('')
+      setNombre('')
+    },
+  })
 
   return (
     <form
@@ -93,12 +132,27 @@ export function FormularioJornada() {
       }}
       className="flex gap-2"
     >
-      <input value={codigo} onChange={(e) => setCodigo(e.target.value)} maxLength={1} placeholder="Código (1 letra)" className={`${campo} w-32`} />
-      <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre (ej. Mañana)" className={`${campo} flex-1`} />
+      <label className={etiqueta}>
+        <span>Código (una letra)</span>
+        <input
+          value={codigo}
+          onChange={(e) => setCodigo(e.target.value)}
+          maxLength={1}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Nombre de la jornada</span>
+        <input
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
       <button type="submit" disabled={accion.isExecuting} className={boton}>
         {accion.isExecuting ? 'Creando…' : 'Añadir'}
       </button>
-      {accion.hasErrored && <p className="text-xs text-error">{accion.result.serverError}</p>}
+      {accion.hasErrored && <p className="text-menudo text-error">{accion.result.serverError}</p>}
     </form>
   )
 }
@@ -107,28 +161,64 @@ export function FormularioCiclo() {
   const [codigo, setCodigo] = useState('')
   const [gradoEquivalente, setGradoEquivalente] = useState('')
   const [esquemaPeriodos, setEsquemaPeriodos] = useState<(typeof ESQUEMAS)[number]>('cuatro')
-  const accion = useAction(crearCiclo, { onSuccess: () => { setCodigo(''); setGradoEquivalente('') } })
+  const accion = useAction(crearCiclo, {
+    onSuccess: () => {
+      setCodigo('')
+      setGradoEquivalente('')
+    },
+  })
 
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault()
         if (!codigo.trim() || !gradoEquivalente.trim()) return
-        accion.execute({ codigo: codigo.trim(), gradoEquivalente: gradoEquivalente.trim(), esquemaPeriodos })
+        accion.execute({
+          codigo: codigo.trim(),
+          gradoEquivalente: gradoEquivalente.trim(),
+          esquemaPeriodos,
+        })
       }}
-      className="flex flex-wrap gap-2"
+      className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-4"
     >
-      <input value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="Código (ej. CLEI-4)" className={`${campo} w-32`} />
-      <input value={gradoEquivalente} onChange={(e) => setGradoEquivalente(e.target.value)} placeholder="Grado equivalente" className={`${campo} w-48`} />
-      <select value={esquemaPeriodos} onChange={(e) => setEsquemaPeriodos(e.target.value as typeof esquemaPeriodos)} className={campo}>
-        {ESQUEMAS.map((e) => (
-          <option key={e} value={e}>{e} periodos</option>
-        ))}
-      </select>
+      <label className={etiqueta}>
+        <span>Código del ciclo</span>
+        <input
+          value={codigo}
+          onChange={(e) => setCodigo(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Grado equivalente</span>
+        <input
+          value={gradoEquivalente}
+          onChange={(e) => setGradoEquivalente(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Esquema de periodos</span>
+        <select
+          value={esquemaPeriodos}
+          onChange={(e) => setEsquemaPeriodos(e.target.value as typeof esquemaPeriodos)}
+          className={`${campo} w-full`}
+        >
+          {ESQUEMAS.map((e) => (
+            <option key={e} value={e}>
+              {e} periodos
+            </option>
+          ))}
+        </select>
+      </label>
       <button type="submit" disabled={accion.isExecuting} className={boton}>
         {accion.isExecuting ? 'Creando…' : 'Añadir'}
       </button>
-      {accion.hasErrored && <p className="w-full text-xs text-error">{accion.result.serverError}</p>}
+      {accion.hasErrored && (
+        <p className="text-menudo text-error sm:col-span-2 lg:col-span-4">
+          {accion.result.serverError}
+        </p>
+      )}
     </form>
   )
 }
@@ -146,15 +236,21 @@ export function FormularioArea() {
       }}
       className="flex gap-2"
     >
-      <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre del área" className={`${campo} flex-1`} />
+      <label className={etiqueta}>
+        <span>Nombre del área</span>
+        <input
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
       <button type="submit" disabled={accion.isExecuting} className={boton}>
         {accion.isExecuting ? 'Creando…' : 'Añadir'}
       </button>
-      {accion.hasErrored && <p className="text-xs text-error">{accion.result.serverError}</p>}
+      {accion.hasErrored && <p className="text-menudo text-error">{accion.result.serverError}</p>}
     </form>
   )
 }
-
 
 export function FormularioAsignatura({ areas }: { areas: Opcion[] }) {
   const [areaId, setAreaId] = useState('')
@@ -168,40 +264,69 @@ export function FormularioAsignatura({ areas }: { areas: Opcion[] }) {
         if (!areaId || !nombre.trim()) return
         accion.execute({ areaId, nombre: nombre.trim() })
       }}
-      className="flex flex-wrap gap-2"
+      className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-4"
     >
-      <select value={areaId} onChange={(e) => setAreaId(e.target.value)} className={campo}>
-        <option value="">Área…</option>
-        {areas.map((a) => (
-          <option key={a.id} value={a.id}>{a.nombre}</option>
-        ))}
-      </select>
-      <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre de la materia" className={`${campo} flex-1`} />
+      <label className={etiqueta}>
+        <span>Área</span>
+        <select
+          value={areaId}
+          onChange={(e) => setAreaId(e.target.value)}
+          className={`${campo} w-full`}
+        >
+          <option value="">Seleccione</option>
+          {areas.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.nombre}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className={etiqueta}>
+        <span>Nombre de la materia</span>
+        <input
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
       <button type="submit" disabled={accion.isExecuting} className={boton}>
         {accion.isExecuting ? 'Creando…' : 'Añadir'}
       </button>
-      {accion.hasErrored && <p className="w-full text-xs text-error">{accion.result.serverError}</p>}
+      {accion.hasErrored && (
+        <p className="text-menudo text-error sm:col-span-2 lg:col-span-4">
+          {accion.result.serverError}
+        </p>
+      )}
     </form>
   )
 }
 
-export function FilaAsignatura({ asignatura, nombreArea }: { asignatura: Asignatura; nombreArea: string }) {
+export function FilaAsignatura({
+  asignatura,
+  nombreArea,
+}: {
+  asignatura: Asignatura
+  nombreArea: string
+}) {
   const accion = useAction(eliminarAsignatura)
   if (accion.hasSucceeded) return null
 
   return (
-    <tr className="border-b border-panel-borde/50">
+    <tr className="border-b border-borde">
       <td className="py-2 pr-3">{asignatura.nombre}</td>
       <td className="py-2 pr-3">{nombreArea}</td>
       <td className="py-2">
-        <button onClick={() => accion.execute({ id: asignatura.id })} disabled={accion.isExecuting} className={botonSecundario}>
+        <button
+          onClick={() => accion.execute({ id: asignatura.id })}
+          disabled={accion.isExecuting}
+          className={botonSecundario}
+        >
           {accion.isExecuting ? 'Eliminando…' : 'Eliminar'}
         </button>
       </td>
     </tr>
   )
 }
-
 
 export function FormularioPlanAsignatura({
   anioLectivoId,
@@ -217,55 +342,90 @@ export function FormularioPlanAsignatura({
   const [horasSemana, setHorasSemana] = useState('1')
   const accion = useAction(agregarAsignaturaPlan, { onSuccess: () => setHorasSemana('1') })
 
-  if (!anioLectivoId) return <p className="text-sm text-panel-secundario">Active un año lectivo primero.</p>
+  if (!anioLectivoId)
+    return <p className="text-nota text-texto-secundario">Active un año lectivo primero.</p>
 
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault()
         if (!cicloId || !asignaturaId) return
-        accion.execute({ anioLectivoId, cicloId, asignaturaId, horasSemana: Number(horasSemana) || 1 })
+        accion.execute({
+          anioLectivoId,
+          cicloId,
+          asignaturaId,
+          horasSemana: Number(horasSemana) || 1,
+        })
       }}
-      className="flex flex-wrap gap-2"
+      className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-4"
     >
-      <select value={cicloId} onChange={(e) => setCicloId(e.target.value)} className={campo}>
-        <option value="">Ciclo…</option>
-        {ciclos.map((c) => (
-          <option key={c.id} value={c.id}>{c.nombre}</option>
-        ))}
-      </select>
-      <select value={asignaturaId} onChange={(e) => setAsignaturaId(e.target.value)} className={campo}>
-        <option value="">Materia…</option>
-        {asignaturas.map((a) => (
-          <option key={a.id} value={a.id}>{a.nombre}</option>
-        ))}
-      </select>
-      <input
-        value={horasSemana}
-        onChange={(e) => setHorasSemana(e.target.value)}
-        type="number"
-        min={1}
-        max={40}
-        placeholder="Horas/semana"
-        className={`${campo} w-28`}
-      />
+      <label className={etiqueta}>
+        <span>Ciclo</span>
+        <select
+          value={cicloId}
+          onChange={(e) => setCicloId(e.target.value)}
+          className={`${campo} w-full`}
+        >
+          <option value="">Seleccione</option>
+          {ciclos.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.nombre}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className={etiqueta}>
+        <span>Materia</span>
+        <select
+          value={asignaturaId}
+          onChange={(e) => setAsignaturaId(e.target.value)}
+          className={`${campo} w-full`}
+        >
+          <option value="">Seleccione</option>
+          {asignaturas.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.nombre}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className={etiqueta}>
+        <span>Horas por semana</span>
+        <input
+          value={horasSemana}
+          onChange={(e) => setHorasSemana(e.target.value)}
+          type="number"
+          min={1}
+          max={40}
+          className={`${campo} w-full`}
+        />
+      </label>
       <button type="submit" disabled={accion.isExecuting} className={boton}>
         {accion.isExecuting ? 'Guardando…' : 'Añadir al plan'}
       </button>
-      {accion.hasErrored && <p className="w-full text-xs text-error">{accion.result.serverError}</p>}
+      {accion.hasErrored && (
+        <p className="text-menudo text-error sm:col-span-2 lg:col-span-4">
+          {accion.result.serverError}
+        </p>
+      )}
     </form>
   )
 }
-
 
 export function FormularioPeriodo({ anioLectivoId }: { anioLectivoId: string | null }) {
   const [numero, setNumero] = useState('1')
   const [esquema, setEsquema] = useState<(typeof ESQUEMAS)[number]>('cuatro')
   const [inicio, setInicio] = useState('')
   const [fin, setFin] = useState('')
-  const accion = useAction(crearPeriodo, { onSuccess: () => { setInicio(''); setFin('') } })
+  const accion = useAction(crearPeriodo, {
+    onSuccess: () => {
+      setInicio('')
+      setFin('')
+    },
+  })
 
-  if (!anioLectivoId) return <p className="text-sm text-panel-secundario">Active un año lectivo primero.</p>
+  if (!anioLectivoId)
+    return <p className="text-nota text-texto-secundario">Active un año lectivo primero.</p>
 
   return (
     <form
@@ -274,20 +434,59 @@ export function FormularioPeriodo({ anioLectivoId }: { anioLectivoId: string | n
         if (!inicio || !fin) return
         accion.execute({ anioLectivoId, numero: Number(numero) || 1, esquema, inicio, fin })
       }}
-      className="flex flex-wrap gap-2"
+      className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-4"
     >
-      <input value={numero} onChange={(e) => setNumero(e.target.value)} type="number" min={1} max={4} className={`${campo} w-20`} />
-      <select value={esquema} onChange={(e) => setEsquema(e.target.value as typeof esquema)} className={campo}>
-        {ESQUEMAS.map((e) => (
-          <option key={e} value={e}>{e} periodos</option>
-        ))}
-      </select>
-      <input value={inicio} onChange={(e) => setInicio(e.target.value)} type="date" className={campo} />
-      <input value={fin} onChange={(e) => setFin(e.target.value)} type="date" className={campo} />
+      <label className={etiqueta}>
+        <span>Número del periodo</span>
+        <input
+          value={numero}
+          onChange={(e) => setNumero(e.target.value)}
+          type="number"
+          min={1}
+          max={4}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Esquema de periodos</span>
+        <select
+          value={esquema}
+          onChange={(e) => setEsquema(e.target.value as typeof esquema)}
+          className={`${campo} w-full`}
+        >
+          {ESQUEMAS.map((e) => (
+            <option key={e} value={e}>
+              {e} periodos
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className={etiqueta}>
+        <span>Fecha de inicio</span>
+        <input
+          value={inicio}
+          onChange={(e) => setInicio(e.target.value)}
+          type="date"
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Fecha de fin</span>
+        <input
+          value={fin}
+          onChange={(e) => setFin(e.target.value)}
+          type="date"
+          className={`${campo} w-full`}
+        />
+      </label>
       <button type="submit" disabled={accion.isExecuting} className={boton}>
         {accion.isExecuting ? 'Creando…' : 'Crear periodo'}
       </button>
-      {accion.hasErrored && <p className="w-full text-xs text-error">{accion.result.serverError}</p>}
+      {accion.hasErrored && (
+        <p className="text-menudo text-error sm:col-span-2 lg:col-span-4">
+          {accion.result.serverError}
+        </p>
+      )}
     </form>
   )
 }
@@ -299,9 +498,11 @@ export function FilaPeriodo({ periodo }: { periodo: Periodo }) {
   })
 
   return (
-    <tr className="border-b border-panel-borde/50">
+    <tr className="border-b border-borde">
       <td className="py-2 pr-3">Periodo {periodo.numero}</td>
-      <td className="py-2 pr-3">{periodo.inicio} a {periodo.fin}</td>
+      <td className="py-2 pr-3">
+        {periodo.inicio} a {periodo.fin}
+      </td>
       <td className="py-2 pr-3">{notasAbiertas ? 'Notas abiertas' : 'Notas cerradas'}</td>
       <td className="py-2">
         <button
@@ -315,7 +516,6 @@ export function FilaPeriodo({ periodo }: { periodo: Periodo }) {
     </tr>
   )
 }
-
 
 export function FormularioCurso({
   anioLectivoId,
@@ -331,7 +531,8 @@ export function FormularioCurso({
   const [nombre, setNombre] = useState('')
   const accion = useAction(crearCurso, { onSuccess: () => setNombre('') })
 
-  if (!anioLectivoId) return <p className="text-sm text-panel-secundario">Active un año lectivo primero.</p>
+  if (!anioLectivoId)
+    return <p className="text-nota text-texto-secundario">Active un año lectivo primero.</p>
 
   return (
     <form
@@ -340,40 +541,81 @@ export function FormularioCurso({
         if (!cicloId || !jornadaId || !nombre.trim()) return
         accion.execute({ anioLectivoId, cicloId, jornadaId, nombre: nombre.trim() })
       }}
-      className="flex flex-wrap gap-2"
+      className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-4"
     >
-      <select value={cicloId} onChange={(e) => setCicloId(e.target.value)} className={campo}>
-        <option value="">Ciclo…</option>
-        {ciclos.map((c) => (
-          <option key={c.id} value={c.id}>{c.nombre}</option>
-        ))}
-      </select>
-      <select value={jornadaId} onChange={(e) => setJornadaId(e.target.value)} className={campo}>
-        <option value="">Jornada…</option>
-        {jornadas.map((j) => (
-          <option key={j.id} value={j.id}>{j.nombre}</option>
-        ))}
-      </select>
-      <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre del curso" className={`${campo} flex-1`} />
+      <label className={etiqueta}>
+        <span>Ciclo</span>
+        <select
+          value={cicloId}
+          onChange={(e) => setCicloId(e.target.value)}
+          className={`${campo} w-full`}
+        >
+          <option value="">Seleccione</option>
+          {ciclos.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.nombre}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className={etiqueta}>
+        <span>Jornada</span>
+        <select
+          value={jornadaId}
+          onChange={(e) => setJornadaId(e.target.value)}
+          className={`${campo} w-full`}
+        >
+          <option value="">Seleccione</option>
+          {jornadas.map((j) => (
+            <option key={j.id} value={j.id}>
+              {j.nombre}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className={etiqueta}>
+        <span>Nombre del curso</span>
+        <input
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
       <button type="submit" disabled={accion.isExecuting} className={boton}>
         {accion.isExecuting ? 'Creando…' : 'Crear curso'}
       </button>
-      {accion.hasErrored && <p className="w-full text-xs text-error">{accion.result.serverError}</p>}
+      {accion.hasErrored && (
+        <p className="text-menudo text-error sm:col-span-2 lg:col-span-4">
+          {accion.result.serverError}
+        </p>
+      )}
     </form>
   )
 }
 
-export function FilaCurso({ curso, cicloNombre, jornadaNombre }: { curso: Curso; cicloNombre: string; jornadaNombre: string }) {
+export function FilaCurso({
+  curso,
+  cicloNombre,
+  jornadaNombre,
+}: {
+  curso: Curso
+  cicloNombre: string
+  jornadaNombre: string
+}) {
   const accion = useAction(eliminarCurso)
   if (accion.hasSucceeded) return null
 
   return (
-    <tr className="border-b border-panel-borde/50">
+    <tr className="border-b border-borde">
       <td className="py-2 pr-3">{curso.nombre}</td>
       <td className="py-2 pr-3">{cicloNombre}</td>
       <td className="py-2 pr-3">{jornadaNombre}</td>
       <td className="py-2">
-        <button onClick={() => accion.execute({ id: curso.id })} disabled={accion.isExecuting} className={botonSecundario}>
+        <button
+          onClick={() => accion.execute({ id: curso.id })}
+          disabled={accion.isExecuting}
+          className={botonSecundario}
+        >
           {accion.isExecuting ? 'Eliminando…' : 'Eliminar'}
         </button>
       </td>

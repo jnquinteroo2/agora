@@ -1,7 +1,5 @@
-import { createReadStream, createWriteStream } from 'fs'
 import { mkdir, unlink, access } from 'fs/promises'
 import { join } from 'path'
-import { pipeline } from 'stream/promises'
 import { env } from '../env'
 
 export type Bucket = 'escudo' | 'firmas' | 'galeria' | 'soportes' | 'pdf' | 'temp'
@@ -85,9 +83,7 @@ export const BYTES_MAGICOS: Record<string, number[][]> = {
 export function verificarBytesMagicos(datos: Buffer, mime: string): boolean {
   const firmas = BYTES_MAGICOS[mime]
   if (!firmas) return false
-  return firmas.some((firma) =>
-    firma.every((byte, i) => datos[i] === byte)
-  )
+  return firmas.some((firma) => firma.every((byte, i) => datos[i] === byte))
 }
 
 export const LIMITES_TAMANO: Record<string, number> = {

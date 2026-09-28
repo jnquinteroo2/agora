@@ -10,5 +10,9 @@ export function escaparHTML(texto: string | null | undefined): string {
 
 export function formatearMoneda(valor: string | number): string {
   const n = Number(valor)
-  return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n)
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0,
+  }).format(n)
 }

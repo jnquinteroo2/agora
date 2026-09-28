@@ -3,6 +3,7 @@ import postgres from 'postgres'
 import { sql } from 'drizzle-orm'
 import * as esquema from './esquema'
 import { env } from '../env'
+import type { Rol } from '../auth/roles'
 
 const conexion = postgres(env.DATABASE_URL, {
   max: 10,
@@ -17,7 +18,7 @@ export type TX = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 export interface ContextoRLS {
   usuarioId: string
-  rol: 'superadmin' | 'docente' | 'estudiante' | 'anonimo' | 'verificacion_publica'
+  rol: Rol | 'anonimo' | 'verificacion_publica'
   anioLectivoId?: string
 }
 

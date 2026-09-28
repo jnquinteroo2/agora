@@ -1,3 +1,4 @@
+import { prepararRolConsultaRls } from './rol-consulta-rls'
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql'
 import postgres, { type Sql } from 'postgres'
@@ -16,9 +17,7 @@ let sqlApp: Sql
 let dbApp: DB
 
 beforeAll(async () => {
-  contenedor = await new PostgreSqlContainer('postgres:18-alpine')
-    .withExposedPorts(5432)
-    .start()
+  contenedor = await new PostgreSqlContainer('postgres:18-alpine').withExposedPorts(5432).start()
 
   const urlRoot = contenedor.getConnectionUri()
 
@@ -35,6 +34,7 @@ beforeAll(async () => {
   await sqlRoot`GRANT CREATE ON DATABASE test TO agora_migraciones`
   await sqlRoot`GRANT USAGE, CREATE ON SCHEMA public TO agora_migraciones`
   await sqlRoot`GRANT USAGE ON SCHEMA public TO agora_app`
+  await prepararRolConsultaRls(sqlRoot)
 
   await sqlRoot`
     ALTER DEFAULT PRIVILEGES FOR ROLE agora_migraciones IN SCHEMA public
@@ -56,10 +56,7 @@ beforeAll(async () => {
   await migrate(dbMigraciones, { migrationsFolder: MIGRATIONS_DIR })
   await sqlMigraciones.end()
 
-  const urlApp = urlRoot.replace(
-    /postgres:\/\/[^@]+@/,
-    `postgres://agora_app:test@`
-  )
+  const urlApp = urlRoot.replace(/postgres:\/\/[^@]+@/, `postgres://agora_app:test@`)
   sqlApp = postgres(urlApp)
   dbApp = drizzle(sqlApp, { schema: e }) as DB
 
@@ -100,46 +97,181 @@ async function ins<T>(promesa: Promise<T[]>): Promise<T> {
 async function sembrarDatosDePrueba() {
   const dbRoot = drizzle(sqlRoot, { schema: e })
 
-  const anio     = await ins(dbRoot.insert(e.anioLectivo).values({ nombre: 'TEST-2025', inicio: '2025-01-01', fin: '2025-12-31', activo: true }).returning())
-  const jornada  = await ins(dbRoot.insert(e.jornada).values({ codigo: 'D', nombre: 'Diurna' }).returning())
-  const ciclo    = await ins(dbRoot.insert(e.ciclo).values({ codigo: '4A-TEST', gradoEquivalente: 'Octavo', esquemaPeriodos: 'cuatro' }).returning())
-  const area     = await ins(dbRoot.insert(e.area).values({ nombre: 'Matemáticas TEST' }).returning())
-  const asig     = await ins(dbRoot.insert(e.asignatura).values({ areaId: area.id, nombre: 'Álgebra TEST' }).returning())
-  const curso    = await ins(dbRoot.insert(e.curso).values({ anioLectivoId: anio.id, cicloId: ciclo.id, jornadaId: jornada.id, nombre: 'Curso TEST' }).returning())
-  const periodo  = await ins(dbRoot.insert(e.periodo).values({ anioLectivoId: anio.id, numero: 1, esquema: 'cuatro', inicio: '2025-01-01', fin: '2025-03-31', notasAbiertas: true }).returning())
+  const anio = await ins(
+    dbRoot
+      .insert(e.anioLectivo)
+      .values({ nombre: 'TEST-2025', inicio: '2025-01-01', fin: '2025-12-31', activo: true })
+      .returning()
+  )
+  const jornada = await ins(
+    dbRoot.insert(e.jornada).values({ codigo: 'D', nombre: 'Diurna' }).returning()
+  )
+  const ciclo = await ins(
+    dbRoot
+      .insert(e.ciclo)
+      .values({ codigo: '4A-TEST', gradoEquivalente: 'Octavo', esquemaPeriodos: 'cuatro' })
+      .returning()
+  )
+  const area = await ins(dbRoot.insert(e.area).values({ nombre: 'Matemáticas TEST' }).returning())
+  const asig = await ins(
+    dbRoot.insert(e.asignatura).values({ areaId: area.id, nombre: 'Álgebra TEST' }).returning()
+  )
+  const curso = await ins(
+    dbRoot
+      .insert(e.curso)
+      .values({
+        anioLectivoId: anio.id,
+        cicloId: ciclo.id,
+        jornadaId: jornada.id,
+        nombre: 'Curso TEST',
+      })
+      .returning()
+  )
+  const periodo = await ins(
+    dbRoot
+      .insert(e.periodo)
+      .values({
+        anioLectivoId: anio.id,
+        numero: 1,
+        esquema: 'cuatro',
+        inicio: '2025-01-01',
+        fin: '2025-03-31',
+        notasAbiertas: true,
+      })
+      .returning()
+  )
 
-  const pdocente = await ins(dbRoot.insert(e.persona).values({ tipoDocumento: 'CC', numeroDocumento: '10000001', primerNombre: 'Docente', primerApellido: 'Test' }).returning())
-  const udocente = await ins(dbRoot.insert(e.usuario).values({ personaId: pdocente.id, correo: 'docente@test.com', rol: 'docente' }).returning())
+  const pdocente = await ins(
+    dbRoot
+      .insert(e.persona)
+      .values({
+        tipoDocumento: 'CC',
+        numeroDocumento: '10000001',
+        primerNombre: 'Docente',
+        primerApellido: 'Test',
+      })
+      .returning()
+  )
+  const udocente = await ins(
+    dbRoot
+      .insert(e.usuario)
+      .values({ personaId: pdocente.id, correo: 'docente@test.com', rol: 'docente' })
+      .returning()
+  )
 
-  await dbRoot.insert(e.asignacionDocente).values({ anioLectivoId: anio.id, docenteId: udocente.id, asignaturaId: asig.id, cursoId: curso.id })
+  await dbRoot
+    .insert(e.asignacionDocente)
+    .values({
+      anioLectivoId: anio.id,
+      docenteId: udocente.id,
+      asignaturaId: asig.id,
+      cursoId: curso.id,
+    })
 
-  const pA = await ins(dbRoot.insert(e.persona).values({ tipoDocumento: 'TI', numeroDocumento: '20000001', primerNombre: 'EstudianteA', primerApellido: 'Prueba' }).returning())
-  const uA = await ins(dbRoot.insert(e.usuario).values({ personaId: pA.id, correo: 'estudiante_a@test.com', rol: 'estudiante' }).returning())
-  const mA = await ins(dbRoot.insert(e.matricula).values({ anioLectivoId: anio.id, estudianteId: pA.id, cursoId: curso.id, estado: 'activo' }).returning())
+  const pA = await ins(
+    dbRoot
+      .insert(e.persona)
+      .values({
+        tipoDocumento: 'TI',
+        numeroDocumento: '20000001',
+        primerNombre: 'EstudianteA',
+        primerApellido: 'Prueba',
+      })
+      .returning()
+  )
+  const uA = await ins(
+    dbRoot
+      .insert(e.usuario)
+      .values({ personaId: pA.id, correo: 'estudiante_a@test.com', rol: 'estudiante' })
+      .returning()
+  )
+  const mA = await ins(
+    dbRoot
+      .insert(e.matricula)
+      .values({ anioLectivoId: anio.id, estudianteId: pA.id, cursoId: curso.id, estado: 'activo' })
+      .returning()
+  )
 
-  const pB = await ins(dbRoot.insert(e.persona).values({ tipoDocumento: 'TI', numeroDocumento: '20000002', primerNombre: 'EstudianteB', primerApellido: 'Prueba' }).returning())
-  const uB = await ins(dbRoot.insert(e.usuario).values({ personaId: pB.id, correo: 'estudiante_b@test.com', rol: 'estudiante' }).returning())
-  const mB = await ins(dbRoot.insert(e.matricula).values({ anioLectivoId: anio.id, estudianteId: pB.id, cursoId: curso.id, estado: 'activo' }).returning())
+  const pB = await ins(
+    dbRoot
+      .insert(e.persona)
+      .values({
+        tipoDocumento: 'TI',
+        numeroDocumento: '20000002',
+        primerNombre: 'EstudianteB',
+        primerApellido: 'Prueba',
+      })
+      .returning()
+  )
+  const uB = await ins(
+    dbRoot
+      .insert(e.usuario)
+      .values({ personaId: pB.id, correo: 'estudiante_b@test.com', rol: 'estudiante' })
+      .returning()
+  )
+  const mB = await ins(
+    dbRoot
+      .insert(e.matricula)
+      .values({ anioLectivoId: anio.id, estudianteId: pB.id, cursoId: curso.id, estado: 'activo' })
+      .returning()
+  )
 
-  const calA  = await ins(dbRoot.insert(e.calificacion).values({ matriculaId: mA.id, asignaturaId: asig.id, periodoId: periodo.id, nota: '4.5', nivelDesempeno: 'Alto', registradoPor: udocente.id }).returning())
-  const ci    = await ins(dbRoot.insert(e.conceptoIngreso).values({ nombre: 'Matrícula TEST' }).returning())
-  const reciboA = await ins(dbRoot.insert(e.reciboCaja).values({ anioLectivoId: anio.id, consecutivo: 1, matriculaId: mA.id, beneficiario: 'EstudianteA Prueba', conceptoId: ci.id, valor: '500000', formaPago: 'efectivo', fecha: '2025-02-01', registradoPor: udocente.id }).returning())
+  const calA = await ins(
+    dbRoot
+      .insert(e.calificacion)
+      .values({
+        matriculaId: mA.id,
+        asignaturaId: asig.id,
+        periodoId: periodo.id,
+        nota: '4.5',
+        nivelDesempeno: 'Alto',
+        registradoPor: udocente.id,
+      })
+      .returning()
+  )
+  const ci = await ins(
+    dbRoot.insert(e.conceptoIngreso).values({ nombre: 'Matrícula TEST' }).returning()
+  )
+  const reciboA = await ins(
+    dbRoot
+      .insert(e.reciboCaja)
+      .values({
+        anioLectivoId: anio.id,
+        consecutivo: 1,
+        matriculaId: mA.id,
+        beneficiario: 'EstudianteA Prueba',
+        conceptoId: ci.id,
+        valor: '500000',
+        formaPago: 'efectivo',
+        fecha: '2025-02-01',
+        registradoPor: udocente.id,
+      })
+      .returning()
+  )
 
   ids = {
-    anioId: anio.id, jornadaId: jornada.id, cicloId: ciclo.id,
-    cursoId: curso.id, periodoId: periodo.id, asignaturaId: asig.id,
-    docenteId: udocente.id, docentePersonaId: pdocente.id,
-    estudianteAId: uA.id, estudianteAPersonaId: pA.id,
-    estudianteBId: uB.id, estudianteBPersonaId: pB.id,
-    matriculaAId: mA.id, matriculaBId: mB.id,
-    calificacionAId: calA.id, reciboAId: reciboA.id,
+    anioId: anio.id,
+    jornadaId: jornada.id,
+    cicloId: ciclo.id,
+    cursoId: curso.id,
+    periodoId: periodo.id,
+    asignaturaId: asig.id,
+    docenteId: udocente.id,
+    docentePersonaId: pdocente.id,
+    estudianteAId: uA.id,
+    estudianteAPersonaId: pA.id,
+    estudianteBId: uB.id,
+    estudianteBPersonaId: pB.id,
+    matriculaAId: mA.id,
+    matriculaBId: mB.id,
+    calificacionAId: calA.id,
+    reciboAId: reciboA.id,
   }
 }
 
 type Fila = Record<string, unknown>
 
 describe('RLS — aislamiento entre roles', () => {
-
   it('[OWNER] agora_app NO es propietario de ninguna tabla', async () => {
     const tablas = await sqlRoot`
       SELECT tablename, tableowner
@@ -156,7 +288,9 @@ describe('RLS — aislamiento entre roles', () => {
       dbApp,
       { usuarioId: ids.estudianteAId, rol: 'estudiante', anioLectivoId: ids.anioId },
       async (tx) => {
-        const r = await tx.execute(drizzleSql`SELECT id FROM calificacion WHERE matricula_id = ${ids.matriculaBId}`)
+        const r = await tx.execute(
+          drizzleSql`SELECT id FROM calificacion WHERE matricula_id = ${ids.matriculaBId}`
+        )
         return r as unknown as Fila[]
       }
     )
@@ -169,11 +303,16 @@ describe('RLS — aislamiento entre roles', () => {
       dbApp,
       { usuarioId: ids.estudianteAId, rol: 'estudiante', anioLectivoId: ids.anioId },
       async (tx) => {
-        const r = await tx.execute(drizzleSql`SELECT id, nota FROM calificacion WHERE matricula_id = ${ids.matriculaAId}`)
+        const r = await tx.execute(
+          drizzleSql`SELECT id, nota FROM calificacion WHERE matricula_id = ${ids.matriculaAId}`
+        )
         return r as unknown as Fila[]
       }
     )
-    console.log(`Estudiante A consultando sus propias calificaciones → ${filas.length} fila(s):`, filas)
+    console.log(
+      `Estudiante A consultando sus propias calificaciones → ${filas.length} fila(s):`,
+      filas
+    )
     expect(filas.length).toBeGreaterThan(0)
     expect(filas[0]!['id']).toBe(ids.calificacionAId)
   })
@@ -204,7 +343,10 @@ describe('RLS — aislamiento entre roles', () => {
         return r as unknown as Fila[]
       }
     )
-    console.log(`Docente consultando calificaciones de su asignatura → ${filas.length} fila(s):`, filas)
+    console.log(
+      `Docente consultando calificaciones de su asignatura → ${filas.length} fila(s):`,
+      filas
+    )
     expect(filas.length).toBeGreaterThan(0)
   })
 
@@ -213,7 +355,9 @@ describe('RLS — aislamiento entre roles', () => {
       dbApp,
       { usuarioId: ids.estudianteBId, rol: 'estudiante', anioLectivoId: ids.anioId },
       async (tx) => {
-        const r = await tx.execute(drizzleSql`SELECT id FROM persona WHERE id = ${ids.estudianteAPersonaId}`)
+        const r = await tx.execute(
+          drizzleSql`SELECT id FROM persona WHERE id = ${ids.estudianteAPersonaId}`
+        )
         return r as unknown as Fila[]
       }
     )
@@ -226,7 +370,9 @@ describe('RLS — aislamiento entre roles', () => {
       dbApp,
       { usuarioId: ids.estudianteAId, rol: 'estudiante', anioLectivoId: ids.anioId },
       async (tx) => {
-        const r = await tx.execute(drizzleSql`SELECT id FROM recibo_caja WHERE matricula_id = ${ids.matriculaBId}`)
+        const r = await tx.execute(
+          drizzleSql`SELECT id FROM recibo_caja WHERE matricula_id = ${ids.matriculaBId}`
+        )
         return r as unknown as Fila[]
       }
     )
@@ -237,7 +383,9 @@ describe('RLS — aislamiento entre roles', () => {
   it('[RLS] sin contexto RLS → sin filas en tablas protegidas', async () => {
     const calificaciones = await sqlApp`SELECT id FROM calificacion`
     const personas = await sqlApp`SELECT id FROM persona`
-    console.log(`Sin contexto: calificacion=${calificaciones.length}, persona=${personas.length} (esperado 0, 0)`)
+    console.log(
+      `Sin contexto: calificacion=${calificaciones.length}, persona=${personas.length} (esperado 0, 0)`
+    )
     expect(calificaciones).toHaveLength(0)
     expect(personas).toHaveLength(0)
   })
@@ -266,11 +414,8 @@ describe('RLS — aislamiento entre roles', () => {
       sqlApp`INSERT INTO auditoria (accion, entidad) VALUES ('test', 'test')`
     ).resolves.toBeDefined()
 
-    await expect(
-      sqlApp`UPDATE auditoria SET accion = 'modificado' WHERE TRUE`
-    ).rejects.toThrow()
+    await expect(sqlApp`UPDATE auditoria SET accion = 'modificado' WHERE TRUE`).rejects.toThrow()
 
     console.log('auditoria: INSERT ✓, UPDATE bloqueado ✓')
   })
-
 })

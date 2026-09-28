@@ -28,12 +28,14 @@ services:
         condition: service_completed_successfully
     networks:
       - internal
+      - idp-admin
     restart: unless-stopped
     volumes:
       - storage:/var/agora/storage
 
   db:
     image: postgres:18-alpine
+    command: ["postgres", "-c", "hba_file=/etc/postgresql/pg_hba.conf"]
     env_file: ../.env
     ports:
       - "5433:5432"
@@ -42,10 +44,12 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
     volumes:
+      - ./postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
       - db_data:/var/lib/postgresql
       - ./postgres-init:/docker-entrypoint-initdb.d:ro
     networks:
       - internal
+      - respaldo
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d agora"]
@@ -70,6 +74,62 @@ services:
     volumes:
       - storage:/var/agora/storage
 
+  cuentas-idp:
+    build:
+      context: ..
+      dockerfile: worker/Dockerfile
+    command: ["node", "--import", "tsx/esm", "worker/idp.ts"]
+    env_file: ../.env
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - internal
+      - idp-admin
+    restart: unless-stopped
+
+  db-keycloak:
+    image: postgres:18.6-alpine@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873
+    entrypoint: ["sh", "-c", "POSTGRES_PASSWORD=\"$$KC_DB_PASSWORD\" exec docker-entrypoint.sh \"$$@\"", "--"]
+    command: ["postgres", "-c", "hba_file=/etc/postgresql/pg_hba.conf"]
+    env_file: ../.env
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    volumes:
+      - ./postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      - db_keycloak_data:/var/lib/postgresql
+      - ./keycloak/postgres-init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - idp
+      - respaldo
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  keycloak:
+    build:
+      context: keycloak
+      dockerfile: Dockerfile
+    env_file: ../.env
+    ports:
+      - "127.0.0.1:8082:8080"
+    depends_on:
+      db-keycloak:
+        condition: service_healthy
+    networks:
+      - idp
+      - idp-admin
+      - correo
+    restart: unless-stopped
+
   mailpit:
     image: axllent/mailpit:latest
     ports:
@@ -77,6 +137,7 @@ services:
       - "1025:1025"
     networks:
       - internal
+      - correo
     restart: unless-stopped
 
   backup:
@@ -89,7 +150,7 @@ services:
       db:
         condition: service_healthy
     networks:
-      - internal
+      - respaldo
     volumes:
       - backups:/backups
     environment:
@@ -97,14 +158,32 @@ services:
       PGPORT: 5432
       PGDATABASE: agora
       PGUSER: agora_backup
+      KEYCLOAK_PGHOST: db-keycloak
+      KEYCLOAK_PGDATABASE: keycloak
+      KEYCLOAK_PGUSER: keycloak_backup
       BACKUP_RETAIN_DAYS: 30
 
 networks:
   internal:
     driver: bridge
     internal: false
+  idp:
+    driver: bridge
+    internal: true
+  idp-admin:
+    driver: bridge
+    internal: true
+  correo:
+    driver: bridge
 
+  respaldo:
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: 10.250.50.0/28
 volumes:
   db_data:
+  db_keycloak_data:
   storage:
   backups:

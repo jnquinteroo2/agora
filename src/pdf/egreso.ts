@@ -8,11 +8,15 @@ export async function construirEgresoHTML(
   egresoId: string,
   solicitante: IdentidadSolicitante
 ): Promise<string> {
-  const fila = await conContextoRLS(db, { usuarioId: solicitante.id, rol: solicitante.rol }, async (tx) => {
-    const [e] = await tx.select().from(egreso).where(eq(egreso.id, egresoId)).limit(1)
-    if (!e) throw new Error('El egreso indicado no existe o no es visible para este solicitante')
-    return e
-  })
+  const fila = await conContextoRLS(
+    db,
+    { usuarioId: solicitante.id, rol: solicitante.rol },
+    async (tx) => {
+      const [e] = await tx.select().from(egreso).where(eq(egreso.id, egresoId)).limit(1)
+      if (!e) throw new Error('El egreso indicado no existe o no es visible para este solicitante')
+      return e
+    }
+  )
 
   return conContextoRLS(
     db,

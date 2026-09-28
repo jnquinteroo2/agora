@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
 import { db, conContextoRLS } from '@/src/datos/cliente'
 import { documentoGenerado } from '@/src/datos/esquema'
@@ -15,10 +16,18 @@ const NOMBRE_TIPO: Record<string, string> = {
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
 
-  const documento = await conContextoRLS(db, { usuarioId: '', rol: 'verificacion_publica' }, async (tx) => {
-    const [d] = await tx.select().from(documentoGenerado).where(eq(documentoGenerado.id, id)).limit(1)
-    return d ?? null
-  })
+  const documento = await conContextoRLS(
+    db,
+    { usuarioId: '', rol: 'verificacion_publica' },
+    async (tx) => {
+      const [d] = await tx
+        .select()
+        .from(documentoGenerado)
+        .where(eq(documentoGenerado.id, id))
+        .limit(1)
+      return d ?? null
+    }
+  )
 
   if (!documento) {
     return new NextResponse(paginaResultado(false), {
@@ -36,8 +45,9 @@ function paginaResultado(
   encontrado: boolean,
   documento?: typeof documentoGenerado.$inferSelect
 ): string {
-  const cuerpo = encontrado && documento
-    ? `
+  const cuerpo =
+    encontrado && documento
+      ? `
       <p class="ok">✓ Documento auténtico</p>
       <dl>
         <dt>Tipo</dt><dd>${NOMBRE_TIPO[documento.tipo] ?? documento.tipo}</dd>
@@ -45,7 +55,7 @@ function paginaResultado(
         <dt>Huella de integridad</dt><dd class="hash">${documento.hashContenido}</dd>
       </dl>
       <p class="nota">Compare la huella de integridad con la que aparece impresa en su documento físico.</p>`
-    : `<p class="error">✗ No se encontró ningún documento con este identificador.</p>`
+      : `<p class="error">✗ No se encontró ningún documento con este identificador.</p>`
 
   return `<!DOCTYPE html>
 <html lang="es">

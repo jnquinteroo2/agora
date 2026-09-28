@@ -5,12 +5,7 @@ import { auth } from '@/src/auth/config'
 import { db, conContextoRLS } from '@/src/datos/cliente'
 import { usuario as tablaUsuario } from '@/src/datos/esquema'
 import { clasificarRuta } from '@/src/seguridad/rutas'
-
-const PREFIJOS_ROL: Array<[string, string[]]> = [
-  ['/panel/admin', ['superadmin']],
-  ['/panel/docente', ['docente']],
-  ['/panel/estudiante', ['estudiante']],
-]
+import { rolesParaRuta } from '@/src/auth/roles'
 
 function construirCSP(nonce: string): string {
   return [
@@ -81,13 +76,12 @@ export async function middleware(request: NextRequest) {
     return conCSP(NextResponse.redirect(url), nonce)
   }
 
-  const rolRequerido = PREFIJOS_ROL.find(([prefijo]) => pathname.startsWith(prefijo))
-  if (!rolRequerido) return siguienteConNonce()
+  const rolesPermitidos = rolesParaRuta(pathname)
+  if (!rolesPermitidos) return siguienteConNonce()
 
-  const [, rolesPermitidos] = rolRequerido
   const rolUsuario = await rolDelUsuario(sesion.user.id)
 
-  if (!rolesPermitidos.includes(rolUsuario)) {
+  if (!(rolesPermitidos as readonly string[]).includes(rolUsuario)) {
     return conCSP(NextResponse.redirect(new URL('/sin-acceso', request.url)), nonce)
   }
 

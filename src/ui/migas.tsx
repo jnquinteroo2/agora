@@ -26,26 +26,28 @@ export function Migas({ ruta, className }: { ruta: Miga[]; className?: string })
   return (
     <nav aria-label="Ruta de navegación" className={className}>
       <JsonLd datos={lista} />
-      <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-menudo text-piedra">
+      <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-menudo text-texto-secundario">
         {ruta.map((miga, indice) => {
           const esUltima = indice === ruta.length - 1
           return (
             <li key={miga.etiqueta} className="flex items-center gap-2">
               {indice > 0 ? (
-                <span aria-hidden="true" className="text-niebla">
+                <span aria-hidden="true" className="text-borde-control">
                   /
                 </span>
               ) : null}
               {miga.href && !esUltima ? (
                 <Link
                   href={miga.href as Route}
-                  className={cn('transicion-ui versalitas hover:text-tinta')}
+                  className={cn(
+                    'transicion-ui rounded-[2px] hover:text-texto hover:underline underline-offset-4'
+                  )}
                 >
                   {miga.etiqueta}
                 </Link>
               ) : (
                 <span
-                  className="versalitas text-tinta"
+                  className="font-medium text-texto"
                   aria-current={esUltima ? 'page' : undefined}
                 >
                   {miga.etiqueta}

@@ -1,6 +1,12 @@
 import { eq } from 'drizzle-orm'
 import { db, conContextoRLS } from '../datos/cliente'
-import { reciboCaja, conceptoIngreso, matricula, persona, configuracionInstitucional } from '../datos/esquema'
+import {
+  reciboCaja,
+  conceptoIngreso,
+  matricula,
+  persona,
+  configuracionInstitucional,
+} from '../datos/esquema'
 import type { IdentidadSolicitante } from '../datos/pdf-token'
 import { escaparHTML, formatearMoneda } from './util'
 
@@ -8,11 +14,15 @@ export async function construirReciboHTML(
   reciboId: string,
   solicitante: IdentidadSolicitante
 ): Promise<string> {
-  const recibo = await conContextoRLS(db, { usuarioId: solicitante.id, rol: solicitante.rol }, async (tx) => {
-    const [r] = await tx.select().from(reciboCaja).where(eq(reciboCaja.id, reciboId)).limit(1)
-    if (!r) throw new Error('El recibo indicado no existe o no es visible para este solicitante')
-    return r
-  })
+  const recibo = await conContextoRLS(
+    db,
+    { usuarioId: solicitante.id, rol: solicitante.rol },
+    async (tx) => {
+      const [r] = await tx.select().from(reciboCaja).where(eq(reciboCaja.id, reciboId)).limit(1)
+      if (!r) throw new Error('El recibo indicado no existe o no es visible para este solicitante')
+      return r
+    }
+  )
 
   return conContextoRLS(
     db,
@@ -28,11 +38,24 @@ export async function construirReciboHTML(
 
       let nombreEstudiante = ''
       if (recibo.matriculaId) {
-        const [m] = await tx.select().from(matricula).where(eq(matricula.id, recibo.matriculaId)).limit(1)
+        const [m] = await tx
+          .select()
+          .from(matricula)
+          .where(eq(matricula.id, recibo.matriculaId))
+          .limit(1)
         if (m) {
-          const [est] = await tx.select().from(persona).where(eq(persona.id, m.estudianteId)).limit(1)
+          const [est] = await tx
+            .select()
+            .from(persona)
+            .where(eq(persona.id, m.estudianteId))
+            .limit(1)
           if (est) {
-            nombreEstudiante = [est.primerNombre, est.segundoNombre, est.primerApellido, est.segundoApellido]
+            nombreEstudiante = [
+              est.primerNombre,
+              est.segundoNombre,
+              est.primerApellido,
+              est.segundoApellido,
+            ]
               .filter(Boolean)
               .join(' ')
           }

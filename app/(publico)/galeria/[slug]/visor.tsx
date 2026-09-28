@@ -12,7 +12,7 @@ export interface FotoVisor {
 }
 
 const botonVisor =
-  'transicion-ui inline-flex h-11 w-11 items-center justify-center rounded-sm border border-hueso/30 text-hueso hover:border-hueso hover:bg-hueso hover:text-tinta active:scale-[0.96] disabled:pointer-events-none disabled:opacity-30'
+  'presionable inline-flex size-11 items-center justify-center rounded-control border border-white/35 text-white hover:border-white hover:bg-white hover:text-black disabled:pointer-events-none disabled:opacity-30'
 
 export function VisorGaleria({ titulo, fotos }: { titulo: string; fotos: FotoVisor[] }) {
   const [abierta, setAbierta] = useState<number | null>(null)
@@ -42,14 +42,14 @@ export function VisorGaleria({ titulo, fotos }: { titulo: string; fotos: FotoVis
               onClick={() => setAbierta(indice)}
               aria-haspopup="dialog"
               aria-label={`Ampliar fotografía ${indice + 1} de ${total}: ${foto.alt}`}
-              className="group relative block aspect-[3/2] w-full cursor-zoom-in overflow-hidden bg-niebla"
+              className="group relative block aspect-[3/2] w-full cursor-zoom-in overflow-hidden rounded-tarjeta border border-borde"
             >
               <Image
                 src={`/api/galeria/imagen/${foto.archivoId}`}
                 alt=""
                 fill
                 sizes="(max-width: 768px) 50vw, 28rem"
-                className="object-cover transition-transform duration-[var(--duration-slow)] ease-[var(--ease-out)] group-hover:scale-[1.02] motion-reduce:transition-none"
+                className="object-cover transition-transform duration-[var(--duration-slow)] ease-[var(--ease-out)] motion-reduce:transition-none [@media(hover:hover)_and_(pointer:fine)]:group-hover:scale-[1.02]"
               />
             </button>
           </li>
@@ -58,7 +58,7 @@ export function VisorGaleria({ titulo, fotos }: { titulo: string; fotos: FotoVis
 
       <Dialogo.Root open={abierta !== null} onOpenChange={(abrir) => !abrir && setAbierta(null)}>
         <Dialogo.Portal>
-          <Dialogo.Overlay className="velo fixed inset-0 z-[var(--capa-velo)] bg-tinta/95" />
+          <Dialogo.Overlay className="velo fixed inset-0 z-[var(--capa-velo)] bg-black/95" />
           <Dialogo.Content
             onKeyDown={(e) => {
               if (e.key === 'ArrowRight') {
@@ -74,12 +74,12 @@ export function VisorGaleria({ titulo, fotos }: { titulo: string; fotos: FotoVis
               e.preventDefault()
               miniaturas.current[ultimaVista.current]?.focus()
             }}
-            className="velo fixed inset-0 z-[var(--capa-dialogo)] flex flex-col text-hueso"
+            className="velo fixed inset-0 z-[var(--capa-dialogo)] flex flex-col text-white [color-scheme:dark]"
           >
             <div className="flex items-center justify-between gap-4 px-margen py-3">
               <div className="flex min-w-0 flex-col">
-                <Dialogo.Title className="truncate font-display text-rubro">{titulo}</Dialogo.Title>
-                <p className="font-mono font-tnum text-menudo text-niebla" aria-live="polite">
+                <Dialogo.Title className="truncate font-titulo text-rubro">{titulo}</Dialogo.Title>
+                <p className="font-mono font-tnum text-menudo text-white/75" aria-live="polite">
                   Fotografía {abierta === null ? 0 : abierta + 1} de {total}
                 </p>
               </div>
@@ -111,7 +111,7 @@ export function VisorGaleria({ titulo, fotos }: { titulo: string; fotos: FotoVis
               >
                 <ChevronLeft aria-hidden="true" size={20} strokeWidth={1.5} />
               </button>
-              <Dialogo.Description className="prosa max-w-medida text-center text-nota text-niebla">
+              <Dialogo.Description className="prosa max-w-medida text-center text-nota text-white/80">
                 {actual?.alt}
               </Dialogo.Description>
               <button

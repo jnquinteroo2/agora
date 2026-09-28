@@ -2,6 +2,7 @@ import { PgBoss } from 'pg-boss'
 import { logger } from '../src/logger'
 import { env } from '../src/env'
 import { COLAS, type TrabajoPDF } from '../src/colas/tipos'
+import { iniciarLatido } from './latido'
 
 export { COLAS }
 
@@ -16,6 +17,7 @@ async function iniciarWorker() {
 
   await boss.start()
   logger.info('Worker pg-boss iniciado')
+  const latido = iniciarLatido(boss, 'pdf')
 
   const SIETE_DIAS_SEGUNDOS = 7 * 24 * 60 * 60
 
@@ -43,7 +45,9 @@ async function iniciarWorker() {
 
   await boss.schedule(COLAS.LIMPIAR_RATE_LIMIT, '*/30 * * * *')
 
+
   process.on('SIGTERM', async () => {
+    clearInterval(latido)
     logger.info('SIGTERM recibido, deteniendo worker')
     await boss.stop()
     process.exit(0)

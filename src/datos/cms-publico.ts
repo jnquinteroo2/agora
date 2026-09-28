@@ -1,6 +1,7 @@
 import { and, asc, count, desc, eq, inArray, isNull, lte, or } from 'drizzle-orm'
 import { db, conContextoRLS } from './cliente'
 import { cmsAlbumFoto, cmsEntrada } from './esquema'
+import { ocultarContenidoDePrueba } from '../seo/metadatos'
 
 export type EntradaCms = typeof cmsEntrada.$inferSelect
 export type FotoAlbum = typeof cmsAlbumFoto.$inferSelect
@@ -24,7 +25,8 @@ export async function obtenerEntradas(tipo: string, limite?: number): Promise<En
       .where(condicionPublicada(tipo))
       .orderBy(desc(cmsEntrada.creadoEn), desc(cmsEntrada.id))
 
-    return limite ? consulta.limit(limite) : consulta
+    const filas = (await consulta).filter((e) => !ocultarContenidoDePrueba(e.slug))
+    return limite ? filas.slice(0, limite) : filas
   })
 }
 
@@ -35,7 +37,7 @@ export async function obtenerEntrada(tipo: string, slug: string): Promise<Entrad
       .from(cmsEntrada)
       .where(and(condicionPublicada(tipo), eq(cmsEntrada.slug, slug)))
       .limit(1)
-    return fila ?? null
+    return fila && !ocultarContenidoDePrueba(fila.slug) ? fila : null
   })
 }
 
@@ -51,7 +53,7 @@ export async function obtenerVecinas(tipo: string, id: string): Promise<Vecinas>
       .from(cmsEntrada)
       .where(condicionPublicada(tipo))
       .orderBy(desc(cmsEntrada.creadoEn), desc(cmsEntrada.id))
-  )
+  ).then((filas) => filas.filter((e) => !ocultarContenidoDePrueba(e.slug)))
   const posicion = todas.findIndex((e) => e.id === id)
   if (posicion === -1) return { anterior: null, siguiente: null }
   return {
@@ -66,11 +68,13 @@ export interface AlbumPublico extends EntradaCms {
 
 export async function obtenerAlbumes(): Promise<AlbumPublico[]> {
   return conContextoRLS(db, CONTEXTO_ANONIMO, async (tx) => {
-    const albumes = await tx
-      .select()
-      .from(cmsEntrada)
-      .where(condicionPublicada('album'))
-      .orderBy(desc(cmsEntrada.creadoEn), desc(cmsEntrada.id))
+    const albumes = (
+      await tx
+        .select()
+        .from(cmsEntrada)
+        .where(condicionPublicada('album'))
+        .orderBy(desc(cmsEntrada.creadoEn), desc(cmsEntrada.id))
+    ).filter((a) => !ocultarContenidoDePrueba(a.slug))
 
     if (albumes.length === 0) return []
 
@@ -100,7 +104,7 @@ export async function obtenerAlbum(
       .where(and(condicionPublicada('album'), eq(cmsEntrada.slug, slug)))
       .limit(1)
 
-    if (!album) return null
+    if (!album || ocultarContenidoDePrueba(album.slug)) return null
 
     const fotos = await tx
       .select()

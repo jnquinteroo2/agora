@@ -13,17 +13,15 @@ export const obtenerUsuarioActual = cache(async () => {
   const sesion = await obtenerSesion()
   if (!sesion?.user?.id) return null
 
-  const [u] = await conContextoRLS(
-    db,
-    { usuarioId: sesion.user.id, rol: 'anonimo' },
-    async (tx) =>
-      tx.select().from(usuario).where(eq(usuario.id, sesion.user.id)).limit(1)
+  const [u] = await conContextoRLS(db, { usuarioId: sesion.user.id, rol: 'anonimo' }, async (tx) =>
+    tx.select().from(usuario).where(eq(usuario.id, sesion.user.id)).limit(1)
   )
 
   return u ?? null
 })
 
-export type Rol = 'superadmin' | 'docente' | 'estudiante'
+export type { Rol } from './roles'
+import type { Rol } from './roles'
 
 export async function exigirSesion() {
   const sesion = await obtenerSesion()

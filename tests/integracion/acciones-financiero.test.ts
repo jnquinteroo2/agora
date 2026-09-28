@@ -1,3 +1,4 @@
+import { prepararRolConsultaRls } from './rol-consulta-rls'
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql'
 import postgres, { type Sql } from 'postgres'
@@ -5,6 +6,7 @@ import { drizzle } from 'drizzle-orm/postgres-js'
 import { migrate } from 'drizzle-orm/postgres-js/migrator'
 import { join } from 'path'
 import * as e from '../../src/datos/esquema'
+import type * as ModuloCliente from '../../src/datos/cliente'
 import { conContextoRLS as conContextoRLSReal, type DB } from '../../src/datos/cliente'
 
 const MIGRATIONS_DIR = join(__dirname, '../../src/datos/migraciones')
@@ -18,7 +20,7 @@ let _dbApp: DB | undefined = undefined
 let actorActual: Actor = { id: '', rol: 'superadmin' }
 
 vi.mock('../../src/datos/cliente', async (importOriginal) => {
-  const original = await importOriginal<typeof import('../../src/datos/cliente')>()
+  const original = await importOriginal<typeof ModuloCliente>()
   return {
     ...original,
     db: {} as DB,
@@ -30,7 +32,11 @@ vi.mock('../../src/datos/cliente', async (importOriginal) => {
       original.conContextoRLS(
         _dbApp!,
         ctx,
-        fn as (tx: Parameters<typeof original.conContextoRLS>[2] extends (tx: infer TX) => unknown ? TX : never) => Promise<T>
+        fn as (
+          tx: Parameters<typeof original.conContextoRLS>[2] extends (tx: infer TX) => unknown
+            ? TX
+            : never
+        ) => Promise<T>
       ),
   }
 })
@@ -85,6 +91,7 @@ beforeAll(async () => {
   await _sqlRoot`GRANT CREATE ON DATABASE test TO agora_migraciones`
   await _sqlRoot`GRANT USAGE, CREATE ON SCHEMA public TO agora_migraciones`
   await _sqlRoot`GRANT USAGE ON SCHEMA public TO agora_app`
+  await prepararRolConsultaRls(_sqlRoot)
   await _sqlRoot`
     ALTER DEFAULT PRIVILEGES FOR ROLE agora_migraciones IN SCHEMA public
       GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO agora_app;
@@ -94,7 +101,10 @@ beforeAll(async () => {
       GRANT USAGE, SELECT ON SEQUENCES TO agora_app;
   `
 
-  const urlMigraciones = urlRoot.replace(/postgres:\/\/[^@]+@/, 'postgres://agora_migraciones:test@')
+  const urlMigraciones = urlRoot.replace(
+    /postgres:\/\/[^@]+@/,
+    'postgres://agora_migraciones:test@'
+  )
   const sqlMigraciones = postgres(urlMigraciones)
   const dbMig = drizzle(sqlMigraciones)
   await migrate(dbMig, { migrationsFolder: MIGRATIONS_DIR })
@@ -116,26 +126,122 @@ afterAll(async () => {
 async function sembrar() {
   const dbRoot = drizzle(_sqlRoot, { schema: e })
 
-  const anio = await ins(dbRoot.insert(e.anioLectivo).values({ nombre: 'FIN-TEST-2025', inicio: '2025-01-01', fin: '2025-12-31', activo: true }).returning())
-  const jornada = await ins(dbRoot.insert(e.jornada).values({ codigo: 'D', nombre: 'Diurna' }).returning())
-  const ciclo = await ins(dbRoot.insert(e.ciclo).values({ codigo: '4A-FIN', gradoEquivalente: 'Octavo', esquemaPeriodos: 'cuatro' }).returning())
-  const curso = await ins(dbRoot.insert(e.curso).values({ anioLectivoId: anio.id, cicloId: ciclo.id, jornadaId: jornada.id, nombre: 'Curso FIN-TEST' }).returning())
+  const anio = await ins(
+    dbRoot
+      .insert(e.anioLectivo)
+      .values({ nombre: 'FIN-TEST-2025', inicio: '2025-01-01', fin: '2025-12-31', activo: true })
+      .returning()
+  )
+  const jornada = await ins(
+    dbRoot.insert(e.jornada).values({ codigo: 'D', nombre: 'Diurna' }).returning()
+  )
+  const ciclo = await ins(
+    dbRoot
+      .insert(e.ciclo)
+      .values({ codigo: '4A-FIN', gradoEquivalente: 'Octavo', esquemaPeriodos: 'cuatro' })
+      .returning()
+  )
+  const curso = await ins(
+    dbRoot
+      .insert(e.curso)
+      .values({
+        anioLectivoId: anio.id,
+        cicloId: ciclo.id,
+        jornadaId: jornada.id,
+        nombre: 'Curso FIN-TEST',
+      })
+      .returning()
+  )
 
-  const pSuper = await ins(dbRoot.insert(e.persona).values({ tipoDocumento: 'CC', numeroDocumento: '70000001', primerNombre: 'Super', primerApellido: 'Admin' }).returning())
-  const uSuper = await ins(dbRoot.insert(e.usuario).values({ personaId: pSuper.id, correo: 'super@fin-test.com', rol: 'superadmin' }).returning())
+  const pSuper = await ins(
+    dbRoot
+      .insert(e.persona)
+      .values({
+        tipoDocumento: 'CC',
+        numeroDocumento: '70000001',
+        primerNombre: 'Super',
+        primerApellido: 'Admin',
+      })
+      .returning()
+  )
+  const uSuper = await ins(
+    dbRoot
+      .insert(e.usuario)
+      .values({ personaId: pSuper.id, correo: 'super@fin-test.com', rol: 'superadmin' })
+      .returning()
+  )
 
-  const pDocente = await ins(dbRoot.insert(e.persona).values({ tipoDocumento: 'CC', numeroDocumento: '70000002', primerNombre: 'Docente', primerApellido: 'FIN-TEST' }).returning())
-  const uDocente = await ins(dbRoot.insert(e.usuario).values({ personaId: pDocente.id, correo: 'docente@fin-test.com', rol: 'docente' }).returning())
+  const pDocente = await ins(
+    dbRoot
+      .insert(e.persona)
+      .values({
+        tipoDocumento: 'CC',
+        numeroDocumento: '70000002',
+        primerNombre: 'Docente',
+        primerApellido: 'FIN-TEST',
+      })
+      .returning()
+  )
+  const uDocente = await ins(
+    dbRoot
+      .insert(e.usuario)
+      .values({ personaId: pDocente.id, correo: 'docente@fin-test.com', rol: 'docente' })
+      .returning()
+  )
 
-  const pEstA = await ins(dbRoot.insert(e.persona).values({ tipoDocumento: 'TI', numeroDocumento: '80000001', primerNombre: 'Estudiante', primerApellido: 'A' }).returning())
-  const uEstA = await ins(dbRoot.insert(e.usuario).values({ personaId: pEstA.id, correo: 'estudiante-a@fin-test.com', rol: 'estudiante' }).returning())
-  const matriculaA = await ins(dbRoot.insert(e.matricula).values({ anioLectivoId: anio.id, estudianteId: pEstA.id, cursoId: curso.id, estado: 'activo' }).returning())
+  const pEstA = await ins(
+    dbRoot
+      .insert(e.persona)
+      .values({
+        tipoDocumento: 'TI',
+        numeroDocumento: '80000001',
+        primerNombre: 'Estudiante',
+        primerApellido: 'A',
+      })
+      .returning()
+  )
+  const uEstA = await ins(
+    dbRoot
+      .insert(e.usuario)
+      .values({ personaId: pEstA.id, correo: 'estudiante-a@fin-test.com', rol: 'estudiante' })
+      .returning()
+  )
+  const matriculaA = await ins(
+    dbRoot
+      .insert(e.matricula)
+      .values({
+        anioLectivoId: anio.id,
+        estudianteId: pEstA.id,
+        cursoId: curso.id,
+        estado: 'activo',
+      })
+      .returning()
+  )
 
-  const pEstB = await ins(dbRoot.insert(e.persona).values({ tipoDocumento: 'TI', numeroDocumento: '80000002', primerNombre: 'Estudiante', primerApellido: 'B' }).returning())
-  const uEstB = await ins(dbRoot.insert(e.usuario).values({ personaId: pEstB.id, correo: 'estudiante-b@fin-test.com', rol: 'estudiante' }).returning())
+  const pEstB = await ins(
+    dbRoot
+      .insert(e.persona)
+      .values({
+        tipoDocumento: 'TI',
+        numeroDocumento: '80000002',
+        primerNombre: 'Estudiante',
+        primerApellido: 'B',
+      })
+      .returning()
+  )
+  const uEstB = await ins(
+    dbRoot
+      .insert(e.usuario)
+      .values({ personaId: pEstB.id, correo: 'estudiante-b@fin-test.com', rol: 'estudiante' })
+      .returning()
+  )
 
-  const concepto = await ins(dbRoot.insert(e.conceptoIngreso).values({ nombre: 'Pensión' }).returning())
-  const categoria = await ins(dbRoot.insert(e.categoriaEgreso).values({ nombre: 'Servicios públicos' }).returning())
+  const concepto = await ins(
+    dbRoot.insert(e.conceptoIngreso).values({ nombre: 'Pensión' }).returning()
+  )
+  const categoria = await ins(
+    dbRoot.insert(e.categoriaEgreso).values({ nombre: 'Servicios públicos' }).returning()
+  )
 
   ids = {
     anioId: anio.id,
@@ -215,7 +321,10 @@ describe('financiero — Server Actions reales → conContextoRLS → BD', () =>
     })
     expect(creado?.serverError, creado?.serverError).toBeUndefined()
 
-    const anulado = await anularRecibo({ reciboId: creado!.data!.id, motivo: 'Error de digitación' })
+    const anulado = await anularRecibo({
+      reciboId: creado!.data!.id,
+      motivo: 'Error de digitación',
+    })
     expect(anulado?.serverError, anulado?.serverError).toBeUndefined()
     expect(anulado?.data?.anulado).toBe(true)
 

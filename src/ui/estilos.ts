@@ -1,15 +1,20 @@
-export const campo =
-  'rounded-sm border border-panel-borde bg-panel-lateral px-2 py-1 text-panel-texto placeholder:text-panel-secundario'
+import { cn } from './cn'
+import { estiloBoton } from './boton'
+import { estiloControl } from './campo'
 
-export const boton = 'rounded-sm bg-carmin px-3 py-1 text-hueso disabled:opacity-50'
+export const campo = cn(estiloControl, 'h-10 text-nota')
 
-export const botonSecundario =
-  'rounded-sm border border-panel-borde px-3 py-1 text-panel-secundario hover:text-panel-texto disabled:opacity-50'
+export const etiqueta = 'flex flex-col gap-1.5 text-menudo font-medium text-texto'
 
-export const tarjeta = 'rounded-sm border border-panel-borde p-4'
+export const boton = estiloBoton({ tono: 'primario', talla: 'sm' })
 
-export const tituloTarjeta = 'mb-3 font-display text-lg'
+export const botonSecundario = estiloBoton({ tono: 'secundario', talla: 'sm' })
 
-export const encabezadoTabla = 'border-b border-panel-borde text-left text-panel-secundario'
+export const tarjeta = 'rounded-tarjeta border border-borde p-5 shadow-sutil sm:p-6'
 
-export const filaTabla = 'border-b border-panel-borde/50'
+export const tituloTarjeta = 'mb-4 font-titulo text-rubro font-medium text-texto'
+
+export const encabezadoTabla =
+  'border-b border-borde-fuerte text-left text-menudo font-semibold text-texto-secundario [&_th]:py-2 [&_th]:pr-3'
+
+export const filaTabla = 'border-b border-borde'

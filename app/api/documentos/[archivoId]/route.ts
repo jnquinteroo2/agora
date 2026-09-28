@@ -1,11 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
 import { auth } from '@/src/auth/config'
 import { db, conContextoRLS } from '@/src/datos/cliente'
 import { archivo, usuario as usuarioTabla } from '@/src/datos/esquema'
 import { almacenamiento, type Bucket } from '@/src/almacenamiento'
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ archivoId: string }> }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ archivoId: string }> }
+) {
   const { archivoId } = await params
   const sesion = await auth.api.getSession({ headers: request.headers })
   if (!sesion?.user?.email) {
@@ -24,7 +28,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   const archivoFila = await conContextoRLS(
     db,
-    { usuarioId: usuarioActual.id, rol: usuarioActual.rol as 'superadmin' | 'docente' | 'estudiante' },
+    {
+      usuarioId: usuarioActual.id,
+      rol: usuarioActual.rol as 'superadmin' | 'docente' | 'estudiante',
+    },
     async (tx) => {
       const [fila] = await tx.select().from(archivo).where(eq(archivo.id, archivoId)).limit(1)
       return fila ?? null

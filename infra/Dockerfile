@@ -28,7 +28,8 @@ FROM node:24-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN addgroup -S -g 10001 agora && adduser -S -G agora -u 10001 agora
+RUN addgroup -S -g 10001 agora && adduser -S -G agora -u 10001 agora \
+ && mkdir -p /var/agora/storage && chown agora:agora /var/agora/storage
 COPY --from=builder --chown=agora:agora /app/.next/standalone ./
 COPY --from=builder --chown=agora:agora /app/.next/static ./.next/static
 COPY --from=builder --chown=agora:agora /app/public ./public

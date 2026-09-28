@@ -1,5 +1,6 @@
 import { createSafeActionClient } from 'next-safe-action'
-import { obtenerSesion, obtenerUsuarioActual, type Rol } from '../auth/sesion'
+import { obtenerSesion, obtenerUsuarioActual } from '../auth/sesion'
+import { ROLES_GESTORES_DE_CUENTAS } from '../auth/roles'
 
 export const accion = createSafeActionClient({
   handleServerError(error) {
@@ -20,6 +21,13 @@ export const accionAutenticada = accion.use(async ({ next }) => {
 
 export const accionSuperadmin = accionAutenticada.use(async ({ ctx, next }) => {
   if (ctx.usuario.rol !== 'superadmin') throw new Error('Se requiere rol superadmin')
+  return next({ ctx })
+})
+
+export const accionGestorCuentas = accionAutenticada.use(async ({ ctx, next }) => {
+  if (!(ROLES_GESTORES_DE_CUENTAS as readonly string[]).includes(ctx.usuario.rol)) {
+    throw new Error('Solo el Administrador y el Superadministrador gestionan cuentas')
+  }
   return next({ ctx })
 })
 

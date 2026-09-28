@@ -8,6 +8,14 @@ export function esContenidoDePrueba(slug: string): boolean {
   return CONTENIDO_DE_PRUEBA.has(slug)
 }
 
+export function contenidoDePruebaVisible(): boolean {
+  return process.env['AGORA_SIEMBRA_DEMO'] === 'true'
+}
+
+export function ocultarContenidoDePrueba(slug: string): boolean {
+  return esContenidoDePrueba(slug) && !contenidoDePruebaVisible()
+}
+
 export function metadatosDePagina({
   titulo,
   descripcion,

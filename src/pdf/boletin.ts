@@ -55,9 +55,14 @@ export async function construirBoletinHTML(
     { usuarioId: solicitante.id, rol: solicitante.rol, anioLectivoId: periodoActual.anioLectivoId },
     async (tx) => {
       const [m] = await tx.select().from(matricula).where(eq(matricula.id, matriculaId)).limit(1)
-      if (!m) throw new Error('La matrícula indicada no existe o no es visible para este solicitante')
+      if (!m)
+        throw new Error('La matrícula indicada no existe o no es visible para este solicitante')
 
-      const [estudiante] = await tx.select().from(persona).where(eq(persona.id, m.estudianteId)).limit(1)
+      const [estudiante] = await tx
+        .select()
+        .from(persona)
+        .where(eq(persona.id, m.estudianteId))
+        .limit(1)
       if (!estudiante) throw new Error('No se encontró la persona del estudiante')
 
       const [cursoFila] = await tx
@@ -108,7 +113,9 @@ export async function construirBoletinHTML(
         orden: b.orden,
       }))
 
-      const promedioGeneral = calcularPromedio(notas.map((n) => (n.nota === null ? null : Number(n.nota))))
+      const promedioGeneral = calcularPromedio(
+        notas.map((n) => (n.nota === null ? null : Number(n.nota)))
+      )
       const nivelGeneral = obtenerNivelDesempeno(promedioGeneral, bandasNum)
 
       const esBorrador = periodoActual.notasAbiertas
@@ -123,7 +130,11 @@ export async function construirBoletinHTML(
         .join(' ')
 
       const filasAsignaturas = plan
-        .sort((a, b) => a.area.nombre.localeCompare(b.area.nombre) || a.asignatura.nombre.localeCompare(b.asignatura.nombre))
+        .sort(
+          (a, b) =>
+            a.area.nombre.localeCompare(b.area.nombre) ||
+            a.asignatura.nombre.localeCompare(b.asignatura.nombre)
+        )
         .map((p) => {
           const cal = notaPorAsignatura.get(p.asignatura.id)
           const nota = cal?.nota ?? null

@@ -35,6 +35,7 @@ test('una solicitud real de admisión queda guardada con el radicado que ve el a
   await pagina.getByLabel('Fecha de nacimiento').fill('2004-05-12')
   await pagina.getByLabel('Ciclo al que aspira').selectOption({ index: 1 })
   await pagina.locator('input[name="jornadaId"]').first().check()
+  await pagina.getByLabel('Teléfono del aspirante').fill('3001112233')
   await pagina.getByLabel('Nombre del acudiente').fill('Acudiente de prueba')
   await pagina.getByLabel('Teléfono del acudiente').fill('3000000000')
   await pagina.locator('#campo-autorizacionDatos').check()

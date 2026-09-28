@@ -130,12 +130,8 @@
           "name": "archivo_subido_por_usuario_id_fk",
           "tableFrom": "archivo",
           "tableTo": "usuario",
-          "columnsFrom": [
-            "subido_por"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["subido_por"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -145,9 +141,7 @@
         "archivo_nombre_stor_unique": {
           "name": "archivo_nombre_stor_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "nombre_stor"
-          ]
+          "columns": ["nombre_stor"]
         }
       },
       "policies": {},
@@ -228,12 +222,8 @@
           "name": "asignacion_docente_anio_lectivo_id_anio_lectivo_id_fk",
           "tableFrom": "asignacion_docente",
           "tableTo": "anio_lectivo",
-          "columnsFrom": [
-            "anio_lectivo_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["anio_lectivo_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -241,12 +231,8 @@
           "name": "asignacion_docente_docente_id_usuario_id_fk",
           "tableFrom": "asignacion_docente",
           "tableTo": "usuario",
-          "columnsFrom": [
-            "docente_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["docente_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -254,12 +240,8 @@
           "name": "asignacion_docente_asignatura_id_asignatura_id_fk",
           "tableFrom": "asignacion_docente",
           "tableTo": "asignatura",
-          "columnsFrom": [
-            "asignatura_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["asignatura_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -267,12 +249,8 @@
           "name": "asignacion_docente_curso_id_curso_id_fk",
           "tableFrom": "asignacion_docente",
           "tableTo": "curso",
-          "columnsFrom": [
-            "curso_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["curso_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -282,12 +260,7 @@
         "asignacion_docente_anio_lectivo_id_docente_id_asignatura_id_curso_id_unique": {
           "name": "asignacion_docente_anio_lectivo_id_docente_id_asignatura_id_curso_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "anio_lectivo_id",
-            "docente_id",
-            "asignatura_id",
-            "curso_id"
-          ]
+          "columns": ["anio_lectivo_id", "docente_id", "asignatura_id", "curso_id"]
         }
       },
       "policies": {},
@@ -330,12 +303,8 @@
           "name": "asignatura_area_id_area_id_fk",
           "tableFrom": "asignatura",
           "tableTo": "area",
-          "columnsFrom": [
-            "area_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["area_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -445,12 +414,8 @@
           "name": "aspirante_persona_id_persona_id_fk",
           "tableFrom": "aspirante",
           "tableTo": "persona",
-          "columnsFrom": [
-            "persona_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["persona_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -458,12 +423,8 @@
           "name": "aspirante_ciclo_id_ciclo_id_fk",
           "tableFrom": "aspirante",
           "tableTo": "ciclo",
-          "columnsFrom": [
-            "ciclo_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["ciclo_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -471,12 +432,8 @@
           "name": "aspirante_jornada_id_jornada_id_fk",
           "tableFrom": "aspirante",
           "tableTo": "jornada",
-          "columnsFrom": [
-            "jornada_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["jornada_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -484,12 +441,8 @@
           "name": "aspirante_revisado_por_usuario_id_fk",
           "tableFrom": "aspirante",
           "tableTo": "usuario",
-          "columnsFrom": [
-            "revisado_por"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["revisado_por"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -499,9 +452,7 @@
         "aspirante_radicado_unique": {
           "name": "aspirante_radicado_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "radicado"
-          ]
+          "columns": ["radicado"]
         }
       },
       "policies": {},
@@ -672,12 +623,8 @@
           "name": "caja_menor_movimiento_anio_lectivo_id_anio_lectivo_id_fk",
           "tableFrom": "caja_menor_movimiento",
           "tableTo": "anio_lectivo",
-          "columnsFrom": [
-            "anio_lectivo_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["anio_lectivo_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -685,12 +632,8 @@
           "name": "caja_menor_movimiento_registrado_por_usuario_id_fk",
           "tableFrom": "caja_menor_movimiento",
           "tableTo": "usuario",
-          "columnsFrom": [
-            "registrado_por"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["registrado_por"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -832,12 +775,8 @@
           "name": "calificacion_matricula_id_matricula_id_fk",
           "tableFrom": "calificacion",
           "tableTo": "matricula",
-          "columnsFrom": [
-            "matricula_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["matricula_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -845,12 +784,8 @@
           "name": "calificacion_asignatura_id_asignatura_id_fk",
           "tableFrom": "calificacion",
           "tableTo": "asignatura",
-          "columnsFrom": [
-            "asignatura_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["asignatura_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -858,12 +793,8 @@
           "name": "calificacion_periodo_id_periodo_id_fk",
           "tableFrom": "calificacion",
           "tableTo": "periodo",
-          "columnsFrom": [
-            "periodo_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["periodo_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -871,12 +802,8 @@
           "name": "calificacion_descriptor_id_descriptor_id_fk",
           "tableFrom": "calificacion",
           "tableTo": "descriptor",
-          "columnsFrom": [
-            "descriptor_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["descriptor_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -884,12 +811,8 @@
           "name": "calificacion_registrado_por_usuario_id_fk",
           "tableFrom": "calificacion",
           "tableTo": "usuario",
-          "columnsFrom": [
-            "registrado_por"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["registrado_por"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -899,11 +822,7 @@
         "calificacion_matricula_id_asignatura_id_periodo_id_unique": {
           "name": "calificacion_matricula_id_asignatura_id_periodo_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "matricula_id",
-            "asignatura_id",
-            "periodo_id"
-          ]
+          "columns": ["matricula_id", "asignatura_id", "periodo_id"]
         }
       },
       "policies": {},
@@ -977,12 +896,8 @@
           "name": "calificacion_historial_calificacion_id_calificacion_id_fk",
           "tableFrom": "calificacion_historial",
           "tableTo": "calificacion",
-          "columnsFrom": [
-            "calificacion_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["calificacion_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -990,12 +905,8 @@
           "name": "calificacion_historial_modificado_por_usuario_id_fk",
           "tableFrom": "calificacion_historial",
           "tableTo": "usuario",
-          "columnsFrom": [
-            "modificado_por"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["modificado_por"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1075,9 +986,7 @@
         "ciclo_codigo_unique": {
           "name": "ciclo_codigo_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "codigo"
-          ]
+          "columns": ["codigo"]
         }
       },
       "policies": {},
@@ -1127,12 +1036,8 @@
           "name": "cms_album_foto_album_id_cms_entrada_id_fk",
           "tableFrom": "cms_album_foto",
           "tableTo": "cms_entrada",
-          "columnsFrom": [
-            "album_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["album_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1140,12 +1045,8 @@
           "name": "cms_album_foto_archivo_id_archivo_id_fk",
           "tableFrom": "cms_album_foto",
           "tableTo": "archivo",
-          "columnsFrom": [
-            "archivo_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["archivo_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1283,12 +1184,8 @@
           "name": "cms_entrada_meta_img_id_archivo_id_fk",
           "tableFrom": "cms_entrada",
           "tableTo": "archivo",
-          "columnsFrom": [
-            "meta_img_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["meta_img_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1296,12 +1193,8 @@
           "name": "cms_entrada_autor_id_usuario_id_fk",
           "tableFrom": "cms_entrada",
           "tableTo": "usuario",
-          "columnsFrom": [
-            "autor_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["autor_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1311,10 +1204,7 @@
         "cms_entrada_tipo_slug_unique": {
           "name": "cms_entrada_tipo_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "tipo",
-            "slug"
-          ]
+          "columns": ["tipo", "slug"]
         }
       },
       "policies": {},
@@ -1537,12 +1427,8 @@
           "name": "curso_anio_lectivo_id_anio_lectivo_id_fk",
           "tableFrom": "curso",
           "tableTo": "anio_lectivo",
-          "columnsFrom": [
-            "anio_lectivo_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["anio_lectivo_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1550,12 +1436,8 @@
           "name": "curso_ciclo_id_ciclo_id_fk",
           "tableFrom": "curso",
           "tableTo": "ciclo",
-          "columnsFrom": [
-            "ciclo_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["ciclo_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1563,12 +1445,8 @@
           "name": "curso_jornada_id_jornada_id_fk",
           "tableFrom": "curso",
           "tableTo": "jornada",
-          "columnsFrom": [
-            "jornada_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["jornada_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1578,11 +1456,7 @@
         "curso_anio_lectivo_id_ciclo_id_jornada_id_unique": {
           "name": "curso_anio_lectivo_id_ciclo_id_jornada_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "anio_lectivo_id",
-            "ciclo_id",
-            "jornada_id"
-          ]
+          "columns": ["anio_lectivo_id", "ciclo_id", "jornada_id"]
         }
       },
       "policies": {},
@@ -1631,12 +1505,8 @@
           "name": "descriptor_asignatura_id_asignatura_id_fk",
           "tableFrom": "descriptor",
           "tableTo": "asignatura",
-          "columnsFrom": [
-            "asignatura_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["asignatura_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1714,12 +1584,8 @@
           "name": "documento_generado_anio_lectivo_id_anio_lectivo_id_fk",
           "tableFrom": "documento_generado",
           "tableTo": "anio_lectivo",
-          "columnsFrom": [
-            "anio_lectivo_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["anio_lectivo_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1727,12 +1593,8 @@
           "name": "documento_generado_periodo_id_periodo_id_fk",
           "tableFrom": "documento_generado",
           "tableTo": "periodo",
-          "columnsFrom": [
-            "periodo_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["periodo_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1740,12 +1602,8 @@
           "name": "documento_generado_archivo_id_archivo_id_fk",
           "tableFrom": "documento_generado",
           "tableTo": "archivo",
-          "columnsFrom": [
-            "archivo_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["archivo_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1753,12 +1611,8 @@
           "name": "documento_generado_generado_por_usuario_id_fk",
           "tableFrom": "documento_generado",
           "tableTo": "usuario",
-          "columnsFrom": [
-            "generado_por"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["generado_por"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1901,12 +1755,8 @@
           "name": "egreso_anio_lectivo_id_anio_lectivo_id_fk",
           "tableFrom": "egreso",
           "tableTo": "anio_lectivo",
-          "columnsFrom": [
-            "anio_lectivo_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["anio_lectivo_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1914,12 +1764,8 @@
           "name": "egreso_categoria_id_categoria_egreso_id_fk",
           "tableFrom": "egreso",
           "tableTo": "categoria_egreso",
-          "columnsFrom": [
-            "categoria_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["categoria_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1927,12 +1773,8 @@
           "name": "egreso_anulado_por_usuario_id_fk",
           "tableFrom": "egreso",
           "tableTo": "usuario",
-          "columnsFrom": [
-            "anulado_por"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["anulado_por"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1940,12 +1782,8 @@
           "name": "egreso_registrado_por_usuario_id_fk",
           "tableFrom": "egreso",
           "tableTo": "usuario",
-          "columnsFrom": [
-            "registrado_por"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["registrado_por"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1955,10 +1793,7 @@
         "egreso_anio_lectivo_id_consecutivo_unique": {
           "name": "egreso_anio_lectivo_id_consecutivo_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "anio_lectivo_id",
-            "consecutivo"
-          ]
+          "columns": ["anio_lectivo_id", "consecutivo"]
         }
       },
       "policies": {},
@@ -2013,12 +1848,8 @@
           "name": "escala_valoracion_anio_lectivo_id_anio_lectivo_id_fk",
           "tableFrom": "escala_valoracion",
           "tableTo": "anio_lectivo",
-          "columnsFrom": [
-            "anio_lectivo_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["anio_lectivo_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2084,12 +1915,8 @@
           "name": "estudiante_familiar_estudiante_id_persona_id_fk",
           "tableFrom": "estudiante_familiar",
           "tableTo": "persona",
-          "columnsFrom": [
-            "estudiante_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["estudiante_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2097,12 +1924,8 @@
           "name": "estudiante_familiar_familiar_id_persona_id_fk",
           "tableFrom": "estudiante_familiar",
           "tableTo": "persona",
-          "columnsFrom": [
-            "familiar_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["familiar_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2162,12 +1985,8 @@
           "name": "historia_academica_persona_id_persona_id_fk",
           "tableFrom": "historia_academica",
           "tableTo": "persona",
-          "columnsFrom": [
-            "persona_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["persona_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2215,9 +2034,7 @@
         "jornada_codigo_unique": {
           "name": "jornada_codigo_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "codigo"
-          ]
+          "columns": ["codigo"]
         }
       },
       "policies": {},
@@ -2360,12 +2177,8 @@
           "name": "matricula_anio_lectivo_id_anio_lectivo_id_fk",
           "tableFrom": "matricula",
           "tableTo": "anio_lectivo",
-          "columnsFrom": [
-            "anio_lectivo_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["anio_lectivo_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2373,12 +2186,8 @@
           "name": "matricula_estudiante_id_persona_id_fk",
           "tableFrom": "matricula",
           "tableTo": "persona",
-          "columnsFrom": [
-            "estudiante_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["estudiante_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2386,12 +2195,8 @@
           "name": "matricula_curso_id_curso_id_fk",
           "tableFrom": "matricula",
           "tableTo": "curso",
-          "columnsFrom": [
-            "curso_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["curso_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2399,12 +2204,8 @@
           "name": "matricula_aspirante_id_aspirante_id_fk",
           "tableFrom": "matricula",
           "tableTo": "aspirante",
-          "columnsFrom": [
-            "aspirante_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["aspirante_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2414,10 +2215,7 @@
         "matricula_anio_lectivo_id_estudiante_id_unique": {
           "name": "matricula_anio_lectivo_id_estudiante_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "anio_lectivo_id",
-            "estudiante_id"
-          ]
+          "columns": ["anio_lectivo_id", "estudiante_id"]
         }
       },
       "policies": {},
@@ -2497,12 +2295,8 @@
           "name": "nomina_bloque_anio_lectivo_id_anio_lectivo_id_fk",
           "tableFrom": "nomina_bloque",
           "tableTo": "anio_lectivo",
-          "columnsFrom": [
-            "anio_lectivo_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["anio_lectivo_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2510,12 +2304,8 @@
           "name": "nomina_bloque_docente_id_usuario_id_fk",
           "tableFrom": "nomina_bloque",
           "tableTo": "usuario",
-          "columnsFrom": [
-            "docente_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["docente_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2523,12 +2313,8 @@
           "name": "nomina_bloque_periodo_id_periodo_id_fk",
           "tableFrom": "nomina_bloque",
           "tableTo": "periodo",
-          "columnsFrom": [
-            "periodo_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["periodo_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2536,12 +2322,8 @@
           "name": "nomina_bloque_egreso_id_egreso_id_fk",
           "tableFrom": "nomina_bloque",
           "tableTo": "egreso",
-          "columnsFrom": [
-            "egreso_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["egreso_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2615,12 +2397,8 @@
           "name": "observador_registro_matricula_id_matricula_id_fk",
           "tableFrom": "observador_registro",
           "tableTo": "matricula",
-          "columnsFrom": [
-            "matricula_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["matricula_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2628,12 +2406,8 @@
           "name": "observador_registro_registrado_por_usuario_id_fk",
           "tableFrom": "observador_registro",
           "tableTo": "usuario",
-          "columnsFrom": [
-            "registrado_por"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["registrado_por"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2705,12 +2479,8 @@
           "name": "periodo_anio_lectivo_id_anio_lectivo_id_fk",
           "tableFrom": "periodo",
           "tableTo": "anio_lectivo",
-          "columnsFrom": [
-            "anio_lectivo_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["anio_lectivo_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2720,11 +2490,7 @@
         "periodo_anio_lectivo_id_numero_esquema_unique": {
           "name": "periodo_anio_lectivo_id_numero_esquema_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "anio_lectivo_id",
-            "numero",
-            "esquema"
-          ]
+          "columns": ["anio_lectivo_id", "numero", "esquema"]
         }
       },
       "policies": {},
@@ -2846,10 +2612,7 @@
         "persona_tipo_documento_numero_documento_unique": {
           "name": "persona_tipo_documento_numero_documento_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "tipo_documento",
-            "numero_documento"
-          ]
+          "columns": ["tipo_documento", "numero_documento"]
         }
       },
       "policies": {},
@@ -2899,12 +2662,8 @@
           "name": "plan_asignatura_anio_lectivo_id_anio_lectivo_id_fk",
           "tableFrom": "plan_asignatura",
           "tableTo": "anio_lectivo",
-          "columnsFrom": [
-            "anio_lectivo_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["anio_lectivo_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2912,12 +2671,8 @@
           "name": "plan_asignatura_ciclo_id_ciclo_id_fk",
           "tableFrom": "plan_asignatura",
           "tableTo": "ciclo",
-          "columnsFrom": [
-            "ciclo_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["ciclo_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2925,12 +2680,8 @@
           "name": "plan_asignatura_asignatura_id_asignatura_id_fk",
           "tableFrom": "plan_asignatura",
           "tableTo": "asignatura",
-          "columnsFrom": [
-            "asignatura_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["asignatura_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2940,11 +2691,7 @@
         "plan_asignatura_anio_lectivo_id_ciclo_id_asignatura_id_unique": {
           "name": "plan_asignatura_anio_lectivo_id_ciclo_id_asignatura_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "anio_lectivo_id",
-            "ciclo_id",
-            "asignatura_id"
-          ]
+          "columns": ["anio_lectivo_id", "ciclo_id", "asignatura_id"]
         }
       },
       "policies": {},
@@ -3000,12 +2747,8 @@
           "name": "plan_cobro_matricula_id_matricula_id_fk",
           "tableFrom": "plan_cobro",
           "tableTo": "matricula",
-          "columnsFrom": [
-            "matricula_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["matricula_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -3013,12 +2756,8 @@
           "name": "plan_cobro_concepto_id_concepto_ingreso_id_fk",
           "tableFrom": "plan_cobro",
           "tableTo": "concepto_ingreso",
-          "columnsFrom": [
-            "concepto_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["concepto_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3167,12 +2906,8 @@
           "name": "recibo_caja_anio_lectivo_id_anio_lectivo_id_fk",
           "tableFrom": "recibo_caja",
           "tableTo": "anio_lectivo",
-          "columnsFrom": [
-            "anio_lectivo_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["anio_lectivo_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -3180,12 +2915,8 @@
           "name": "recibo_caja_matricula_id_matricula_id_fk",
           "tableFrom": "recibo_caja",
           "tableTo": "matricula",
-          "columnsFrom": [
-            "matricula_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["matricula_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -3193,12 +2924,8 @@
           "name": "recibo_caja_concepto_id_concepto_ingreso_id_fk",
           "tableFrom": "recibo_caja",
           "tableTo": "concepto_ingreso",
-          "columnsFrom": [
-            "concepto_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["concepto_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -3206,12 +2933,8 @@
           "name": "recibo_caja_anulado_por_usuario_id_fk",
           "tableFrom": "recibo_caja",
           "tableTo": "usuario",
-          "columnsFrom": [
-            "anulado_por"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["anulado_por"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -3219,12 +2942,8 @@
           "name": "recibo_caja_registrado_por_usuario_id_fk",
           "tableFrom": "recibo_caja",
           "tableTo": "usuario",
-          "columnsFrom": [
-            "registrado_por"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["registrado_por"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3234,10 +2953,7 @@
         "recibo_caja_anio_lectivo_id_consecutivo_unique": {
           "name": "recibo_caja_anio_lectivo_id_consecutivo_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "anio_lectivo_id",
-            "consecutivo"
-          ]
+          "columns": ["anio_lectivo_id", "consecutivo"]
         }
       },
       "policies": {},
@@ -3281,12 +2997,8 @@
           "name": "secuencia_anio_lectivo_id_anio_lectivo_id_fk",
           "tableFrom": "secuencia",
           "tableTo": "anio_lectivo",
-          "columnsFrom": [
-            "anio_lectivo_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["anio_lectivo_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3296,10 +3008,7 @@
         "secuencia_anio_lectivo_id_tipo_unique": {
           "name": "secuencia_anio_lectivo_id_tipo_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "anio_lectivo_id",
-            "tipo"
-          ]
+          "columns": ["anio_lectivo_id", "tipo"]
         }
       },
       "policies": {},
@@ -3370,12 +3079,8 @@
           "name": "usuario_persona_id_persona_id_fk",
           "tableFrom": "usuario",
           "tableTo": "persona",
-          "columnsFrom": [
-            "persona_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["persona_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3385,9 +3090,7 @@
         "usuario_correo_unique": {
           "name": "usuario_correo_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "correo"
-          ]
+          "columns": ["correo"]
         }
       },
       "policies": {},

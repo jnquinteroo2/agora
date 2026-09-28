@@ -1,5 +1,10 @@
 'use client'
 
+import {
+  CODIGOS_TIPO_DOCUMENTO,
+  etiquetaTipoDocumento,
+  type TipoDocumento,
+} from '@/src/dominio/documentos'
 import { useState } from 'react'
 import { useAction } from 'next-safe-action/hooks'
 import {
@@ -7,12 +12,17 @@ import {
   matricularEstudiante,
   editarMatricula,
 } from '@/src/acciones/matricula/matricula'
-import { buscarPersonaPorDocumento, otorgarAcceso } from '@/src/acciones/personas/persona'
+import { buscarPersonaPorDocumento } from '@/src/acciones/personas/persona'
+import { FormularioOtorgarAcceso } from '../../_cuentas/formularios'
 import type { Matricula, Persona, Curso } from '@/src/datos/esquema'
-import { campo, boton, botonSecundario } from '@/src/ui/estilos'
+import { campo, boton, botonSecundario, etiqueta } from '@/src/ui/estilos'
 
-const TIPOS_DOCUMENTO = ['CC', 'TI', 'CE', 'RC', 'PA', 'NIP'] as const
 const ESTADOS_MATRICULA = ['activo', 'retirado', 'trasladado'] as const
+const ETIQUETAS_ESTADO_MATRICULA: Record<(typeof ESTADOS_MATRICULA)[number], string> = {
+  activo: 'Activo',
+  retirado: 'Retirado',
+  trasladado: 'Trasladado',
+}
 
 interface CursoOpcion extends Pick<Curso, 'id' | 'nombre'> {}
 
@@ -23,7 +33,7 @@ export function FormularioNuevoEstudiante({
   anioLectivoId: string | null
   cursos: CursoOpcion[]
 }) {
-  const [tipoDocumento, setTipoDocumento] = useState<(typeof TIPOS_DOCUMENTO)[number]>('TI')
+  const [tipoDocumento, setTipoDocumento] = useState<TipoDocumento>('TI')
   const [numeroDocumento, setNumeroDocumento] = useState('')
   const [primerNombre, setPrimerNombre] = useState('')
   const [segundoNombre, setSegundoNombre] = useState('')
@@ -52,7 +62,7 @@ export function FormularioNuevoEstudiante({
 
   if (!anioLectivoId) {
     return (
-      <p className="text-sm text-panel-secundario">
+      <p className="text-nota text-texto-secundario">
         No hay un año lectivo activo. Actívelo en Materias antes de matricular estudiantes.
       </p>
     )
@@ -62,7 +72,8 @@ export function FormularioNuevoEstudiante({
     <form
       onSubmit={(e) => {
         e.preventDefault()
-        if (!numeroDocumento.trim() || !primerNombre.trim() || !primerApellido.trim() || !cursoId) return
+        if (!numeroDocumento.trim() || !primerNombre.trim() || !primerApellido.trim() || !cursoId)
+          return
         accion.execute({
           anioLectivoId,
           cursoId,
@@ -80,39 +91,127 @@ export function FormularioNuevoEstudiante({
           },
         })
       }}
-      className="flex flex-wrap gap-2"
+      className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-4"
     >
-      <select value={tipoDocumento} onChange={(e) => setTipoDocumento(e.target.value as typeof tipoDocumento)} className={campo}>
-        {TIPOS_DOCUMENTO.map((t) => (
-          <option key={t} value={t}>{t}</option>
-        ))}
-      </select>
-      <input value={numeroDocumento} onChange={(e) => setNumeroDocumento(e.target.value)} placeholder="N.º documento" className={`${campo} w-36`} />
-      <input value={primerNombre} onChange={(e) => setPrimerNombre(e.target.value)} placeholder="Primer nombre" className={`${campo} w-40`} />
-      <input value={segundoNombre} onChange={(e) => setSegundoNombre(e.target.value)} placeholder="Segundo nombre" className={`${campo} w-40`} />
-      <input value={primerApellido} onChange={(e) => setPrimerApellido(e.target.value)} placeholder="Primer apellido" className={`${campo} w-40`} />
-      <input value={segundoApellido} onChange={(e) => setSegundoApellido(e.target.value)} placeholder="Segundo apellido" className={`${campo} w-40`} />
-      <input value={fechaNacimiento} onChange={(e) => setFechaNacimiento(e.target.value)} type="date" className={campo} />
-      <select value={genero} onChange={(e) => setGenero(e.target.value)} className={campo}>
-        <option value="">Género…</option>
-        <option value="M">M</option>
-        <option value="F">F</option>
-        <option value="NB">No binario</option>
-        <option value="NR">Prefiere no decir</option>
-      </select>
-      <input value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="Teléfono (opcional)" className={`${campo} w-40`} />
-      <input value={correo} onChange={(e) => setCorreo(e.target.value)} placeholder="Correo (opcional)" className={`${campo} w-56`} />
-      <select value={cursoId} onChange={(e) => setCursoId(e.target.value)} className={campo}>
-        <option value="">Curso…</option>
-        {cursos.map((c) => (
-          <option key={c.id} value={c.id}>{c.nombre}</option>
-        ))}
-      </select>
+      <label className={etiqueta}>
+        <span>Tipo de documento</span>
+        <select
+          value={tipoDocumento}
+          onChange={(e) => setTipoDocumento(e.target.value as typeof tipoDocumento)}
+          className={`${campo} w-full`}
+        >
+          {CODIGOS_TIPO_DOCUMENTO.map((t) => (
+            <option key={t} value={t}>
+              {etiquetaTipoDocumento(t)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className={etiqueta}>
+        <span>Número de documento</span>
+        <input
+          value={numeroDocumento}
+          onChange={(e) => setNumeroDocumento(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Primer nombre</span>
+        <input
+          value={primerNombre}
+          onChange={(e) => setPrimerNombre(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Segundo nombre</span>
+        <input
+          value={segundoNombre}
+          onChange={(e) => setSegundoNombre(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Primer apellido</span>
+        <input
+          value={primerApellido}
+          onChange={(e) => setPrimerApellido(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Segundo apellido</span>
+        <input
+          value={segundoApellido}
+          onChange={(e) => setSegundoApellido(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Fecha de nacimiento</span>
+        <input
+          value={fechaNacimiento}
+          onChange={(e) => setFechaNacimiento(e.target.value)}
+          type="date"
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Género</span>
+        <select
+          value={genero}
+          onChange={(e) => setGenero(e.target.value)}
+          className={`${campo} w-full`}
+        >
+          <option value="">Seleccione</option>
+          <option value="M">Masculino</option>
+          <option value="F">Femenino</option>
+          <option value="NB">No binario</option>
+          <option value="NR">Prefiere no reportar</option>
+        </select>
+      </label>
+      <label className={etiqueta}>
+        <span>Teléfono (opcional)</span>
+        <input
+          value={telefono}
+          onChange={(e) => setTelefono(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Correo (opcional)</span>
+        <input
+          value={correo}
+          onChange={(e) => setCorreo(e.target.value)}
+          className={`${campo} w-full`}
+        />
+      </label>
+      <label className={etiqueta}>
+        <span>Curso</span>
+        <select
+          value={cursoId}
+          onChange={(e) => setCursoId(e.target.value)}
+          className={`${campo} w-full`}
+        >
+          <option value="">Seleccione</option>
+          {cursos.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.nombre}
+            </option>
+          ))}
+        </select>
+      </label>
       <button type="submit" disabled={accion.isExecuting} className={boton}>
         {accion.isExecuting ? 'Registrando…' : 'Registrar y matricular'}
       </button>
-      {accion.hasErrored && <p className="w-full text-xs text-error">{accion.result.serverError}</p>}
-      {accion.hasSucceeded && <p className="w-full text-xs text-exito">Estudiante matriculado ✓</p>}
+      {accion.hasErrored && (
+        <p className="text-menudo text-error sm:col-span-2 lg:col-span-4">
+          {accion.result.serverError}
+        </p>
+      )}
+      {accion.hasSucceeded && (
+        <p className="text-menudo text-exito sm:col-span-2 lg:col-span-4">Estudiante matriculado</p>
+      )}
     </form>
   )
 }
@@ -124,7 +223,7 @@ export function FormularioMatricularExistente({
   anioLectivoId: string | null
   cursos: CursoOpcion[]
 }) {
-  const [tipoDocumento, setTipoDocumento] = useState<(typeof TIPOS_DOCUMENTO)[number]>('CC')
+  const [tipoDocumento, setTipoDocumento] = useState<TipoDocumento>('CC')
   const [numeroDocumento, setNumeroDocumento] = useState('')
   const [encontrada, setEncontrada] = useState<Persona | null>(null)
   const [cursoId, setCursoId] = useState('')
@@ -158,22 +257,39 @@ export function FormularioMatricularExistente({
           setBuscado(false)
           buscar.execute({ tipoDocumento, numeroDocumento: numeroDocumento.trim() })
         }}
-        className="flex flex-wrap gap-2"
+        className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-4"
       >
-        <select value={tipoDocumento} onChange={(e) => setTipoDocumento(e.target.value as typeof tipoDocumento)} className={campo}>
-          {TIPOS_DOCUMENTO.map((t) => (
-            <option key={t} value={t}>{t}</option>
-          ))}
-        </select>
-        <input value={numeroDocumento} onChange={(e) => setNumeroDocumento(e.target.value)} placeholder="N.º documento" className={`${campo} w-40`} />
+        <label className={etiqueta}>
+          <span>Tipo de documento</span>
+          <select
+            value={tipoDocumento}
+            onChange={(e) => setTipoDocumento(e.target.value as typeof tipoDocumento)}
+            className={`${campo} w-full`}
+          >
+            {CODIGOS_TIPO_DOCUMENTO.map((t) => (
+              <option key={t} value={t}>
+                {etiquetaTipoDocumento(t)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className={etiqueta}>
+          <span>Número de documento</span>
+          <input
+            value={numeroDocumento}
+            onChange={(e) => setNumeroDocumento(e.target.value)}
+            className={`${campo} w-full`}
+          />
+        </label>
         <button type="submit" disabled={buscar.isExecuting} className={botonSecundario}>
           {buscar.isExecuting ? 'Buscando…' : 'Buscar persona'}
         </button>
       </form>
 
       {buscado && !encontrada && (
-        <p className="text-xs text-panel-secundario">
-          No existe ninguna persona con ese documento. Use &quot;Registrar y matricular&quot; arriba.
+        <p className="text-menudo text-texto-secundario">
+          No existe ninguna persona con ese documento. Use &quot;Registrar y matricular&quot;
+          arriba.
         </p>
       )}
 
@@ -186,19 +302,33 @@ export function FormularioMatricularExistente({
           }}
           className="flex flex-wrap items-center gap-2"
         >
-          <span className="text-sm">
-            {encontrada.primerNombre} {encontrada.primerApellido} — {encontrada.tipoDocumento} {encontrada.numeroDocumento}
+          <span className="text-nota">
+            {encontrada.primerNombre} {encontrada.primerApellido}, {encontrada.tipoDocumento}{' '}
+            {encontrada.numeroDocumento}
           </span>
-          <select value={cursoId} onChange={(e) => setCursoId(e.target.value)} className={campo}>
-            <option value="">Curso…</option>
-            {cursos.map((c) => (
-              <option key={c.id} value={c.id}>{c.nombre}</option>
-            ))}
-          </select>
+          <label className={etiqueta}>
+            <span>Curso</span>
+            <select
+              value={cursoId}
+              onChange={(e) => setCursoId(e.target.value)}
+              className={`${campo} w-full`}
+            >
+              <option value="">Seleccione</option>
+              {cursos.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nombre}
+                </option>
+              ))}
+            </select>
+          </label>
           <button type="submit" disabled={matricular.isExecuting} className={boton}>
             {matricular.isExecuting ? 'Matriculando…' : 'Matricular'}
           </button>
-          {matricular.hasErrored && <p className="w-full text-xs text-error">{matricular.result.serverError}</p>}
+          {matricular.hasErrored && (
+            <p className="text-menudo text-error sm:col-span-2 lg:col-span-4">
+              {matricular.result.serverError}
+            </p>
+          )}
         </form>
       )}
     </div>
@@ -210,34 +340,52 @@ interface FilaMatriculaProps {
   nombreEstudiante: string
   documento: string
   cursos: CursoOpcion[]
+  conKeycloak: boolean
 }
 
-export function FilaMatricula({ matricula, nombreEstudiante, documento, cursos }: FilaMatriculaProps) {
+export function FilaMatricula({
+  matricula,
+  nombreEstudiante,
+  documento,
+  cursos,
+  conKeycloak,
+}: FilaMatriculaProps) {
   const [cursoId, setCursoId] = useState(matricula.cursoId)
   const [estado, setEstado] = useState(matricula.estado as (typeof ESTADOS_MATRICULA)[number])
   const accion = useAction(editarMatricula)
-  const acceso = useAction(otorgarAcceso)
   const [otorgando, setOtorgando] = useState(false)
-  const [correoAcceso, setCorreoAcceso] = useState('')
-  const [contrasenaAcceso, setContrasenaAcceso] = useState('')
 
   const huboCambios = cursoId !== matricula.cursoId || estado !== matricula.estado
 
   return (
-    <tr className="border-b border-panel-borde/50 align-top">
+    <tr className="border-b border-borde align-top">
       <td className="py-2 pr-3">{nombreEstudiante}</td>
       <td className="py-2 pr-3">{documento}</td>
       <td className="py-2 pr-3">
-        <select value={cursoId} onChange={(e) => setCursoId(e.target.value)} className={campo}>
+        <select
+          aria-label={`Curso de ${nombreEstudiante}`}
+          value={cursoId}
+          onChange={(e) => setCursoId(e.target.value)}
+          className={campo}
+        >
           {cursos.map((c) => (
-            <option key={c.id} value={c.id}>{c.nombre}</option>
+            <option key={c.id} value={c.id}>
+              {c.nombre}
+            </option>
           ))}
         </select>
       </td>
       <td className="py-2 pr-3">
-        <select value={estado} onChange={(e) => setEstado(e.target.value as typeof estado)} className={campo}>
+        <select
+          aria-label={`Estado de la matrícula de ${nombreEstudiante}`}
+          value={estado}
+          onChange={(e) => setEstado(e.target.value as typeof estado)}
+          className={campo}
+        >
           {ESTADOS_MATRICULA.map((e) => (
-            <option key={e} value={e}>{e}</option>
+            <option key={e} value={e}>
+              {ETIQUETAS_ESTADO_MATRICULA[e]}
+            </option>
           ))}
         </select>
       </td>
@@ -251,48 +399,21 @@ export function FilaMatricula({ matricula, nombreEstudiante, documento, cursos }
             {accion.isExecuting ? 'Guardando…' : 'Guardar cambios'}
           </button>
         )}
-        {accion.hasSucceeded && !huboCambios && <span className="text-xs text-exito">Guardado ✓</span>}
-        {accion.hasErrored && <span className="text-xs text-error">{accion.result.serverError}</span>}
+        {accion.hasSucceeded && !huboCambios && (
+          <span className="text-menudo text-exito">Guardado</span>
+        )}
+        {accion.hasErrored && (
+          <span className="text-menudo text-error">{accion.result.serverError}</span>
+        )}
 
         {!otorgando && (
           <button onClick={() => setOtorgando(true)} className={botonSecundario}>
             Dar acceso al panel
           </button>
         )}
-        {otorgando && !acceso.hasSucceeded && (
-          <form
-            onSubmit={(ev) => {
-              ev.preventDefault()
-              if (!correoAcceso.trim() || contrasenaAcceso.length < 12) return
-              acceso.execute({
-                personaId: matricula.estudianteId,
-                correo: correoAcceso.trim(),
-                rol: 'estudiante',
-                contrasenaInicial: contrasenaAcceso,
-              })
-            }}
-            className="flex flex-col gap-1"
-          >
-            <input
-              value={correoAcceso}
-              onChange={(e) => setCorreoAcceso(e.target.value)}
-              placeholder="Correo de acceso"
-              className={`${campo} w-48`}
-            />
-            <input
-              value={contrasenaAcceso}
-              onChange={(e) => setContrasenaAcceso(e.target.value)}
-              placeholder="Contraseña inicial (mín. 12)"
-              type="text"
-              className={`${campo} w-48`}
-            />
-            <button type="submit" disabled={acceso.isExecuting} className={boton}>
-              {acceso.isExecuting ? 'Creando…' : 'Crear acceso'}
-            </button>
-            {acceso.hasErrored && <span className="text-xs text-error">{acceso.result.serverError}</span>}
-          </form>
+        {otorgando && (
+          <FormularioOtorgarAcceso personaId={matricula.estudianteId} conKeycloak={conKeycloak} />
         )}
-        {acceso.hasSucceeded && <span className="text-xs text-exito">Acceso creado ✓</span>}
       </td>
     </tr>
   )

@@ -1,3 +1,4 @@
+import { prepararRolConsultaRls } from './rol-consulta-rls'
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql'
 import postgres, { type Sql } from 'postgres'
@@ -5,6 +6,7 @@ import { drizzle } from 'drizzle-orm/postgres-js'
 import { migrate } from 'drizzle-orm/postgres-js/migrator'
 import { join } from 'path'
 import * as e from '../../src/datos/esquema'
+import type * as ModuloCliente from '../../src/datos/cliente'
 import { conContextoRLS as conContextoRLSReal, type DB } from '../../src/datos/cliente'
 
 const MIGRATIONS_DIR = join(__dirname, '../../src/datos/migraciones')
@@ -18,7 +20,7 @@ let _dbApp: DB | undefined = undefined
 let actorActual: Actor = { id: '', rol: 'superadmin' }
 
 vi.mock('../../src/datos/cliente', async (importOriginal) => {
-  const original = await importOriginal<typeof import('../../src/datos/cliente')>()
+  const original = await importOriginal<typeof ModuloCliente>()
   return {
     ...original,
     db: {} as DB,
@@ -30,7 +32,11 @@ vi.mock('../../src/datos/cliente', async (importOriginal) => {
       original.conContextoRLS(
         _dbApp!,
         ctx,
-        fn as (tx: Parameters<typeof original.conContextoRLS>[2] extends (tx: infer TX) => unknown ? TX : never) => Promise<T>
+        fn as (
+          tx: Parameters<typeof original.conContextoRLS>[2] extends (tx: infer TX) => unknown
+            ? TX
+            : never
+        ) => Promise<T>
       ),
   }
 })
@@ -82,6 +88,7 @@ beforeAll(async () => {
   await _sqlRoot`GRANT CREATE ON DATABASE test TO agora_migraciones`
   await _sqlRoot`GRANT USAGE, CREATE ON SCHEMA public TO agora_migraciones`
   await _sqlRoot`GRANT USAGE ON SCHEMA public TO agora_app`
+  await prepararRolConsultaRls(_sqlRoot)
   await _sqlRoot`
     ALTER DEFAULT PRIVILEGES FOR ROLE agora_migraciones IN SCHEMA public
       GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO agora_app;
@@ -91,7 +98,10 @@ beforeAll(async () => {
       GRANT USAGE, SELECT ON SEQUENCES TO agora_app;
   `
 
-  const urlMigraciones = urlRoot.replace(/postgres:\/\/[^@]+@/, 'postgres://agora_migraciones:test@')
+  const urlMigraciones = urlRoot.replace(
+    /postgres:\/\/[^@]+@/,
+    'postgres://agora_migraciones:test@'
+  )
   const sqlMigraciones = postgres(urlMigraciones)
   const dbMig = drizzle(sqlMigraciones)
   await migrate(dbMig, { migrationsFolder: MIGRATIONS_DIR })
@@ -113,24 +123,121 @@ afterAll(async () => {
 async function sembrar() {
   const dbRoot = drizzle(_sqlRoot, { schema: e })
 
-  const anio = await ins(dbRoot.insert(e.anioLectivo).values({ nombre: 'OBS-TEST-2025', inicio: '2025-01-01', fin: '2025-12-31', activo: true }).returning())
-  const jornada = await ins(dbRoot.insert(e.jornada).values({ codigo: 'D', nombre: 'Diurna' }).returning())
-  const ciclo = await ins(dbRoot.insert(e.ciclo).values({ codigo: '4A-OBS', gradoEquivalente: 'Octavo', esquemaPeriodos: 'cuatro' }).returning())
-  const curso = await ins(dbRoot.insert(e.curso).values({ anioLectivoId: anio.id, cicloId: ciclo.id, jornadaId: jornada.id, nombre: 'Curso OBS-TEST' }).returning())
+  const anio = await ins(
+    dbRoot
+      .insert(e.anioLectivo)
+      .values({ nombre: 'OBS-TEST-2025', inicio: '2025-01-01', fin: '2025-12-31', activo: true })
+      .returning()
+  )
+  const jornada = await ins(
+    dbRoot.insert(e.jornada).values({ codigo: 'D', nombre: 'Diurna' }).returning()
+  )
+  const ciclo = await ins(
+    dbRoot
+      .insert(e.ciclo)
+      .values({ codigo: '4A-OBS', gradoEquivalente: 'Octavo', esquemaPeriodos: 'cuatro' })
+      .returning()
+  )
+  const curso = await ins(
+    dbRoot
+      .insert(e.curso)
+      .values({
+        anioLectivoId: anio.id,
+        cicloId: ciclo.id,
+        jornadaId: jornada.id,
+        nombre: 'Curso OBS-TEST',
+      })
+      .returning()
+  )
 
-  const pDocenteAsignado = await ins(dbRoot.insert(e.persona).values({ tipoDocumento: 'CC', numeroDocumento: '50000001', primerNombre: 'Docente', primerApellido: 'Asignado' }).returning())
-  const uDocenteAsignado = await ins(dbRoot.insert(e.usuario).values({ personaId: pDocenteAsignado.id, correo: 'docente_asignado@obs-test.com', rol: 'docente' }).returning())
+  const pDocenteAsignado = await ins(
+    dbRoot
+      .insert(e.persona)
+      .values({
+        tipoDocumento: 'CC',
+        numeroDocumento: '50000001',
+        primerNombre: 'Docente',
+        primerApellido: 'Asignado',
+      })
+      .returning()
+  )
+  const uDocenteAsignado = await ins(
+    dbRoot
+      .insert(e.usuario)
+      .values({
+        personaId: pDocenteAsignado.id,
+        correo: 'docente_asignado@obs-test.com',
+        rol: 'docente',
+      })
+      .returning()
+  )
 
   const area = await ins(dbRoot.insert(e.area).values({ nombre: 'Área OBS-TEST' }).returning())
-  const asig = await ins(dbRoot.insert(e.asignatura).values({ areaId: area.id, nombre: 'Asignatura OBS-TEST' }).returning())
-  await dbRoot.insert(e.asignacionDocente).values({ anioLectivoId: anio.id, docenteId: uDocenteAsignado.id, asignaturaId: asig.id, cursoId: curso.id })
+  const asig = await ins(
+    dbRoot
+      .insert(e.asignatura)
+      .values({ areaId: area.id, nombre: 'Asignatura OBS-TEST' })
+      .returning()
+  )
+  await dbRoot
+    .insert(e.asignacionDocente)
+    .values({
+      anioLectivoId: anio.id,
+      docenteId: uDocenteAsignado.id,
+      asignaturaId: asig.id,
+      cursoId: curso.id,
+    })
 
-  const pDocenteNoAsignado = await ins(dbRoot.insert(e.persona).values({ tipoDocumento: 'CC', numeroDocumento: '50000002', primerNombre: 'Docente', primerApellido: 'SinAsignar' }).returning())
-  const uDocenteNoAsignado = await ins(dbRoot.insert(e.usuario).values({ personaId: pDocenteNoAsignado.id, correo: 'docente_sin_asignar@obs-test.com', rol: 'docente' }).returning())
+  const pDocenteNoAsignado = await ins(
+    dbRoot
+      .insert(e.persona)
+      .values({
+        tipoDocumento: 'CC',
+        numeroDocumento: '50000002',
+        primerNombre: 'Docente',
+        primerApellido: 'SinAsignar',
+      })
+      .returning()
+  )
+  const uDocenteNoAsignado = await ins(
+    dbRoot
+      .insert(e.usuario)
+      .values({
+        personaId: pDocenteNoAsignado.id,
+        correo: 'docente_sin_asignar@obs-test.com',
+        rol: 'docente',
+      })
+      .returning()
+  )
 
-  const pEst = await ins(dbRoot.insert(e.persona).values({ tipoDocumento: 'TI', numeroDocumento: '60000001', primerNombre: 'Estudiante', primerApellido: 'OBS-TEST' }).returning())
-  const uEst = await ins(dbRoot.insert(e.usuario).values({ personaId: pEst.id, correo: 'estudiante@obs-test.com', rol: 'estudiante' }).returning())
-  const matricula = await ins(dbRoot.insert(e.matricula).values({ anioLectivoId: anio.id, estudianteId: pEst.id, cursoId: curso.id, estado: 'activo' }).returning())
+  const pEst = await ins(
+    dbRoot
+      .insert(e.persona)
+      .values({
+        tipoDocumento: 'TI',
+        numeroDocumento: '60000001',
+        primerNombre: 'Estudiante',
+        primerApellido: 'OBS-TEST',
+      })
+      .returning()
+  )
+  const uEst = await ins(
+    dbRoot
+      .insert(e.usuario)
+      .values({ personaId: pEst.id, correo: 'estudiante@obs-test.com', rol: 'estudiante' })
+      .returning()
+  )
+  const matricula = await ins(
+    dbRoot
+      .insert(e.matricula)
+      .values({
+        anioLectivoId: anio.id,
+        estudianteId: pEst.id,
+        cursoId: curso.id,
+        estado: 'activo',
+      })
+      .returning()
+  )
 
   ids = {
     anioId: anio.id,
@@ -195,7 +302,8 @@ describe('observador del estudiante — Server Actions reales → conContextoRLS
 
   it('marcarFirmaObservador actualiza las banderas de firma', async () => {
     actorActual = { id: ids.docenteAsignadoId, rol: 'docente' }
-    const { registrarObservacion, marcarFirmaObservador } = await import('../../src/acciones/observador/observador')
+    const { registrarObservacion, marcarFirmaObservador } =
+      await import('../../src/acciones/observador/observador')
 
     const creada = await registrarObservacion({
       matriculaId: ids.matriculaId,

@@ -1,4 +1,4 @@
-"use server"
+'use server'
 
 import { z } from 'zod'
 import { eq } from 'drizzle-orm'
@@ -20,10 +20,7 @@ export const crearAnioLectivo = accionSuperadmin
       db,
       { usuarioId: ctx.usuario.id, rol: ctx.usuario.rol as 'superadmin' },
       async (tx) => {
-        const [nuevo] = await tx
-          .insert(anioLectivo)
-          .values(parsedInput)
-          .returning()
+        const [nuevo] = await tx.insert(anioLectivo).values(parsedInput).returning()
         await registrarAuditoria(tx, {
           actorId: ctx.usuario.id,
           actorRol: ctx.usuario.rol,
@@ -61,14 +58,12 @@ export const activarAnioLectivo = accionSuperadmin
     )
   })
 
-export const listarAniosLectivos = accionSuperadmin
-  .schema(z.object({}))
-  .action(async ({ ctx }) => {
-    return conContextoRLS(
-      db,
-      { usuarioId: ctx.usuario.id, rol: ctx.usuario.rol as 'superadmin' },
-      async (tx) => {
-        return tx.select().from(anioLectivo).orderBy(anioLectivo.nombre)
-      }
-    )
-  })
+export const listarAniosLectivos = accionSuperadmin.schema(z.object({})).action(async ({ ctx }) => {
+  return conContextoRLS(
+    db,
+    { usuarioId: ctx.usuario.id, rol: ctx.usuario.rol as 'superadmin' },
+    async (tx) => {
+      return tx.select().from(anioLectivo).orderBy(anioLectivo.nombre)
+    }
+  )
+})

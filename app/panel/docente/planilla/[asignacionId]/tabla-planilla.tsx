@@ -45,37 +45,44 @@ export function TablaPlanilla({
 
   if (!periodoAbierto) {
     return (
-      <div className="rounded-sm border border-panel-borde bg-panel-lateral/30 p-4 text-panel-secundario">
+      <div className="rounded-control border border-borde  p-4 text-texto-secundario">
         Este periodo está cerrado: las notas ya no se pueden modificar desde aquí.
       </div>
     )
   }
 
   return (
-    <table className="w-full border-collapse text-sm">
-      <thead>
-        <tr className="border-b border-panel-borde text-left text-panel-secundario">
-          <th className="py-2">Estudiante</th>
-          <th className="py-2">Nota</th>
-          <th className="py-2">Fallas</th>
-          <th className="py-2">Descriptor</th>
-          <th className="py-2"></th>
-          <th className="py-2"></th>
-        </tr>
-      </thead>
-      <tbody>
-        {estudiantes.map((estudiante) => (
-          <FilaPlanilla
-            key={estudiante.matriculaId}
-            estudiante={estudiante}
-            asignaturaId={asignaturaId}
-            periodoId={periodoId}
-            existente={notaPorMatricula.get(estudiante.matriculaId)}
-            descriptores={descriptores}
-          />
-        ))}
-      </tbody>
-    </table>
+    <div
+      role="region"
+      aria-label="Tabla con desplazamiento horizontal"
+      tabIndex={0}
+      className="-mx-1 overflow-x-auto px-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foco"
+    >
+      <table className="w-full border-collapse text-nota">
+        <thead>
+          <tr className="border-b border-borde text-left text-texto-secundario">
+            <th className="py-2">Estudiante</th>
+            <th className="py-2">Nota</th>
+            <th className="py-2">Fallas</th>
+            <th className="py-2">Descriptor</th>
+            <th className="py-2"></th>
+            <th className="py-2"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {estudiantes.map((estudiante) => (
+            <FilaPlanilla
+              key={estudiante.matriculaId}
+              estudiante={estudiante}
+              asignaturaId={asignaturaId}
+              periodoId={periodoId}
+              existente={notaPorMatricula.get(estudiante.matriculaId)}
+              descriptores={descriptores}
+            />
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
 }
 
@@ -115,7 +122,7 @@ function FilaPlanilla({
   }
 
   return (
-    <tr className="border-b border-panel-borde/50">
+    <tr className="border-b border-borde">
       <td className="py-2 pr-3">{estudiante.nombre}</td>
       <td className="py-2 pr-3">
         <input
@@ -123,30 +130,33 @@ function FilaPlanilla({
           step="0.1"
           min={1}
           max={5}
+          aria-label={`Nota de ${estudiante.nombre}`}
           disabled={bloqueado}
           value={nota}
           onChange={(e) => setNota(e.target.value)}
-          className="w-20 rounded-sm border border-panel-borde bg-panel-lateral px-2 py-1 text-panel-texto disabled:opacity-50"
+          className="w-20 h-9 rounded-control border border-borde-control bg-superficie-elevada px-2 text-texto disabled:opacity-50"
         />
       </td>
       <td className="py-2 pr-3">
         <input
           type="number"
           min={0}
+          aria-label={`Fallas de ${estudiante.nombre}`}
           disabled={bloqueado}
           value={fallas}
           onChange={(e) => setFallas(Number(e.target.value))}
-          className="w-16 rounded-sm border border-panel-borde bg-panel-lateral px-2 py-1 text-panel-texto disabled:opacity-50"
+          className="w-16 h-9 rounded-control border border-borde-control bg-superficie-elevada px-2 text-texto disabled:opacity-50"
         />
       </td>
       <td className="py-2 pr-3">
         <select
+          aria-label={`Descriptor de ${estudiante.nombre}`}
           disabled={bloqueado}
           value={descriptorId}
           onChange={(e) => setDescriptorId(e.target.value)}
-          className="max-w-[220px] rounded-sm border border-panel-borde bg-panel-lateral px-2 py-1 text-panel-texto disabled:opacity-50"
+          className="max-w-[220px] h-9 rounded-control border border-borde-control bg-superficie-elevada px-2 text-texto disabled:opacity-50"
         >
-          <option value="">—</option>
+          <option value="">Sin descriptor</option>
           {descriptores.map((d) => (
             <option key={d.id} value={d.id}>
               {d.nivel}: {d.texto.slice(0, 40)}
@@ -156,29 +166,31 @@ function FilaPlanilla({
       </td>
       <td className="py-2">
         {bloqueado ? (
-          <span className="text-panel-secundario">Bloqueada</span>
+          <span className="text-texto-secundario">Bloqueada</span>
         ) : (
           <button
             onClick={guardar}
             disabled={accion.isExecuting}
-            className="rounded-sm bg-carmin px-3 py-1 text-hueso disabled:opacity-50"
+            className="rounded-control bg-acento px-3 py-1 text-sobre-acento disabled:opacity-50"
           >
             {accion.isExecuting ? 'Guardando…' : 'Guardar'}
           </button>
         )}
-        {accion.hasErrored && <p className="text-xs text-error">{accion.result.serverError}</p>}
-        {accion.hasSucceeded && <p className="text-xs text-exito">Guardado ✓</p>}
+        {accion.hasErrored && <p className="text-menudo text-error">{accion.result.serverError}</p>}
+        {accion.hasSucceeded && <p className="text-menudo text-exito">Guardado</p>}
       </td>
       <td className="py-2">
         <button
           onClick={() => accionBoletin.execute({ matriculaId: estudiante.matriculaId, periodoId })}
           disabled={accionBoletin.isExecuting}
-          className="rounded-sm border border-panel-borde px-3 py-1 text-panel-secundario hover:text-panel-texto disabled:opacity-50"
+          className="rounded-control border border-borde px-3 py-1 text-texto-secundario hover:text-texto disabled:opacity-50"
         >
           {accionBoletin.isExecuting ? 'Encolando…' : 'Generar boletín'}
         </button>
-        {accionBoletin.hasErrored && <p className="text-xs text-error">{accionBoletin.result.serverError}</p>}
-        {accionBoletin.hasSucceeded && <p className="text-xs text-exito">En proceso ✓</p>}
+        {accionBoletin.hasErrored && (
+          <p className="text-menudo text-error">{accionBoletin.result.serverError}</p>
+        )}
+        {accionBoletin.hasSucceeded && <p className="text-menudo text-exito">En proceso</p>}
       </td>
     </tr>
   )

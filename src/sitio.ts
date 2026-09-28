@@ -20,7 +20,7 @@ export function exigirConfiguracionDelSitio(): void {
   if (process.env.NODE_ENV !== 'production' || enBuild()) return
   if (!leerUrl()) {
     throw new Error(
-      'Falta la variable de entorno SITIO_URL o no es una URL válida. Defina la URL pública del sitio, por ejemplo SITIO_URL=https://colegioagora.edu.co, y reinicie el servicio.'
+      'Falta la variable de entorno SITIO_URL o no es una URL válida. Defina la URL pública del sitio, por ejemplo SITIO_URL=https://dominio.example, y reinicie el servicio.'
     )
   }
 }

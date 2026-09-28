@@ -1,10 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
 import { db, conContextoRLS } from '@/src/datos/cliente'
 import { archivo } from '@/src/datos/esquema'
 import { almacenamiento, type Bucket } from '@/src/almacenamiento'
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ archivoId: string }> }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ archivoId: string }> }
+) {
   const { archivoId } = await params
 
   const archivoFila = await conContextoRLS(db, { usuarioId: '', rol: 'anonimo' }, async (tx) => {

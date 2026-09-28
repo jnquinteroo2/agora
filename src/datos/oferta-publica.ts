@@ -69,9 +69,6 @@ export async function obtenerOferta(): Promise<OfertaPublica> {
   return { ciclos, jornadas, anio: anioActivo.nombre, combinaciones, completa }
 }
 
-export function cuentaCiclosPorJornada(
-  oferta: OfertaPublica,
-  jornadaId: string
-): number {
+export function cuentaCiclosPorJornada(oferta: OfertaPublica, jornadaId: string): number {
   return oferta.ciclos.filter((c) => oferta.combinaciones.has(claveOferta(c.id, jornadaId))).length
 }

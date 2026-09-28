@@ -1,28 +1,25 @@
-"use server"
+'use server'
 
 import { z } from 'zod'
 import { eq, and } from 'drizzle-orm'
-import { hash } from '@node-rs/argon2'
-import { createLocalAccountIssuer } from 'better-auth/db'
 import { db, conContextoRLS, registrarAuditoria } from '../../datos/cliente'
-import { persona, usuario, baUser, baAccount } from '../../datos/esquema'
-import { accionSuperadmin } from '../middleware'
-
-export const esqPersona = z.object({
-  tipoDocumento: z.enum(['CC', 'TI', 'CE', 'RC', 'PA', 'NIP']),
-  numeroDocumento: z.string().min(4).max(20),
-  primerNombre: z.string().min(1).max(60),
-  segundoNombre: z.string().max(60).optional(),
-  primerApellido: z.string().min(1).max(60),
-  segundoApellido: z.string().max(60).optional(),
-  fechaNacimiento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  lugarNacimiento: z.string().max(100).optional(),
-  genero: z.enum(['M', 'F', 'NB', 'NR']).optional(),
-  telefono: z.string().max(20).optional(),
-  correo: z.string().email().optional(),
-  direccion: z.string().max(200).optional(),
-  eps: z.string().max(100).optional(),
-})
+import { persona, usuario } from '../../datos/esquema'
+import { accionSuperadmin, accionGestorCuentas } from '../middleware'
+import { ROLES, type Rol } from '../../auth/roles'
+import { esqPersona } from './esquemas'
+import { CODIGOS_TIPO_DOCUMENTO } from '../../dominio/documentos'
+import {
+  darDeAltaCuenta,
+  cambiarEstadoCuenta,
+  reenviarInvitacion,
+  restablecerContrasenaTemporal,
+  cambiarCorreoCuenta,
+  cambiarRolCuenta,
+  exigirCuentaGestionable,
+  exigirTotpCuenta,
+  keycloakActivo,
+} from '../../auth/idp/alta'
+import { sincronizarEstadoIdp } from '../../auth/idp/cuentas'
 
 export const crearPersona = accionSuperadmin
   .schema(esqPersona)
@@ -33,79 +30,88 @@ export const crearPersona = accionSuperadmin
       async (tx) => {
         const [nueva] = await tx.insert(persona).values(parsedInput).returning()
         await registrarAuditoria(tx, {
-          actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-          accion: 'crear', entidad: 'persona', entidadId: nueva!.id,
+          actorId: ctx.usuario.id,
+          actorRol: ctx.usuario.rol,
+          accion: 'crear',
+          entidad: 'persona',
+          entidadId: nueva!.id,
         })
         return nueva!
       }
     )
   })
 
-const esqUsuario = z.object({
-  persona: esqPersona,
-  correo: z.string().email(),
-  rol: z.enum(['superadmin', 'docente', 'estudiante']),
-  contrasenaInicial: z.string().min(12),
+const esqAcceso = z.object({
+  rol: z.enum(ROLES),
+  correo: z.string().trim().toLowerCase().email().optional(),
+  sinCorreo: z.boolean().default(false),
+  contrasenaInicial: z.string().min(12).optional(),
 })
 
-export const crearUsuario = accionSuperadmin
+function validarAcceso(datos: z.infer<typeof esqAcceso>, contexto: z.RefinementCtx) {
+  if (datos.sinCorreo) {
+    if (datos.rol !== 'estudiante') {
+      contexto.addIssue({
+        code: 'custom',
+        path: ['sinCorreo'],
+        message: 'Solo las cuentas de estudiante pueden crearse sin correo.',
+      })
+    }
+    if (datos.correo) {
+      contexto.addIssue({
+        code: 'custom',
+        path: ['correo'],
+        message: 'Una cuenta sin correo no lleva correo de acceso.',
+      })
+    }
+    return
+  }
+  if (!datos.correo) {
+    contexto.addIssue({ code: 'custom', path: ['correo'], message: 'Escriba el correo de acceso.' })
+  }
+  if (!keycloakActivo() && !datos.contrasenaInicial) {
+    contexto.addIssue({
+      code: 'custom',
+      path: ['contrasenaInicial'],
+      message: 'Escriba la contraseña inicial (mínimo 12 caracteres).',
+    })
+  }
+}
+
+function contextoDe(ctx: { usuario: { id: string; rol: string } }) {
+  return {
+    contexto: { usuarioId: ctx.usuario.id, rol: ctx.usuario.rol as Rol },
+    actor: { id: ctx.usuario.id, rol: ctx.usuario.rol },
+  }
+}
+
+const esqUsuario = esqAcceso.extend({ persona: esqPersona }).superRefine(validarAcceso)
+
+export const crearUsuario = accionGestorCuentas
   .schema(esqUsuario)
   .action(async ({ parsedInput, ctx }) => {
-    return conContextoRLS(
-      db,
-      { usuarioId: ctx.usuario.id, rol: ctx.usuario.rol as 'superadmin' },
+    const { contexto, actor } = contextoDe(ctx)
+    const { persona: datosPersona } = parsedInput
+    return darDeAltaCuenta(
+      contexto,
+      actor,
+      {
+        rol: parsedInput.rol,
+        correo: parsedInput.correo,
+        sinCorreo: parsedInput.sinCorreo,
+        contrasenaInicial: parsedInput.contrasenaInicial,
+        nombres: [datosPersona.primerNombre, datosPersona.segundoNombre].filter(Boolean).join(' '),
+        apellidos: [datosPersona.primerApellido, datosPersona.segundoApellido]
+          .filter(Boolean)
+          .join(' '),
+      },
+      'crear_usuario',
       async (tx) => {
-        const [nuevaPersona] = await tx
-          .insert(persona)
-          .values(parsedInput.persona)
-          .returning()
-
-        const [nuevoUsuario] = await tx
-          .insert(usuario)
-          .values({
-            personaId: nuevaPersona!.id,
-            correo: parsedInput.correo,
-            rol: parsedInput.rol,
-          })
-          .returning()
-
-        const contrasenaHash = await hash(parsedInput.contrasenaInicial, {
-          memoryCost: 65536,
-          timeCost: 3,
-          parallelism: 4,
-        })
-        const baId = nuevoUsuario!.id
-
-        await tx.insert(baUser).values({
-          id: baId,
-          name: `${parsedInput.persona.primerNombre} ${parsedInput.persona.primerApellido}`,
-          email: parsedInput.correo,
-          emailVerified: true,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
-
-        await tx.insert(baAccount).values({
-          id: baId,
-          accountId: baId,
-          providerId: 'credential',
-          issuer: createLocalAccountIssuer('credential'),
-          userId: baId,
-          password: contrasenaHash,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
-
-        await registrarAuditoria(tx, {
-          actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-          accion: 'crear_usuario', entidad: 'usuario', entidadId: nuevoUsuario!.id,
-        })
-
-        return { personaId: nuevaPersona!.id, usuarioId: nuevoUsuario!.id }
+        const [nuevaPersona] = await tx.insert(persona).values(datosPersona).returning()
+        return nuevaPersona!.id
       }
     )
   })
-
 
 const esqEditarPersona = esqPersona.extend({ id: z.string().uuid() })
 
@@ -124,8 +130,11 @@ export const editarPersona = accionSuperadmin
           .returning()
         if (!actualizada) throw new Error('La persona indicada no existe')
         await registrarAuditoria(tx, {
-          actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-          accion: 'editar', entidad: 'persona', entidadId: actualizada.id,
+          actorId: ctx.usuario.id,
+          actorRol: ctx.usuario.rol,
+          accion: 'editar',
+          entidad: 'persona',
+          entidadId: actualizada.id,
         })
         return actualizada
       }
@@ -133,7 +142,7 @@ export const editarPersona = accionSuperadmin
   })
 
 const esqBuscarPersona = z.object({
-  tipoDocumento: z.enum(['CC', 'TI', 'CE', 'RC', 'PA', 'NIP']),
+  tipoDocumento: z.enum(CODIGOS_TIPO_DOCUMENTO),
   numeroDocumento: z.string().min(4).max(20),
 })
 
@@ -164,88 +173,106 @@ const esqCambiarEstadoUsuario = z.object({
   activo: z.boolean(),
 })
 
-export const cambiarEstadoUsuario = accionSuperadmin
+export const cambiarEstadoUsuario = accionGestorCuentas
   .schema(esqCambiarEstadoUsuario)
   .action(async ({ parsedInput, ctx }) => {
-    return conContextoRLS(
-      db,
-      { usuarioId: ctx.usuario.id, rol: ctx.usuario.rol as 'superadmin' },
+    const { contexto, actor } = contextoDe(ctx)
+    return cambiarEstadoCuenta(contexto, actor, parsedInput.usuarioId, parsedInput.activo)
+  })
+
+const esqOtorgarAcceso = esqAcceso
+  .extend({ personaId: z.string().uuid() })
+  .superRefine(validarAcceso)
+
+export const otorgarAcceso = accionGestorCuentas
+  .schema(esqOtorgarAcceso)
+  .action(async ({ parsedInput, ctx }) => {
+    const { contexto, actor } = contextoDe(ctx)
+    const [personaBase] = await conContextoRLS(db, contexto, (tx) =>
+      tx.select().from(persona).where(eq(persona.id, parsedInput.personaId)).limit(1)
+    )
+    if (!personaBase) throw new Error('La persona indicada no existe')
+    return darDeAltaCuenta(
+      contexto,
+      actor,
+      {
+        rol: parsedInput.rol,
+        correo: parsedInput.correo,
+        sinCorreo: parsedInput.sinCorreo,
+        contrasenaInicial: parsedInput.contrasenaInicial,
+        nombres: [personaBase.primerNombre, personaBase.segundoNombre].filter(Boolean).join(' '),
+        apellidos: [personaBase.primerApellido, personaBase.segundoApellido]
+          .filter(Boolean)
+          .join(' '),
+      },
+      'otorgar_acceso',
       async (tx) => {
-        const [actualizado] = await tx
-          .update(usuario)
-          .set({ activo: parsedInput.activo, actualizadoEn: new Date() })
-          .where(eq(usuario.id, parsedInput.usuarioId))
-          .returning()
-        if (!actualizado) throw new Error('El usuario indicado no existe')
-        await registrarAuditoria(tx, {
-          actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-          accion: parsedInput.activo ? 'activar_usuario' : 'desactivar_usuario',
-          entidad: 'usuario', entidadId: actualizado.id,
-        })
-        return actualizado
+        const [existente] = await tx
+          .select({ id: usuario.id })
+          .from(usuario)
+          .where(eq(usuario.personaId, personaBase.id))
+          .limit(1)
+        if (existente) throw new Error('Esta persona ya tiene una cuenta de acceso.')
+        return personaBase.id
       }
     )
   })
 
-const esqOtorgarAcceso = z.object({
-  personaId: z.string().uuid(),
-  correo: z.string().email(),
-  rol: z.enum(['superadmin', 'docente', 'estudiante']),
-  contrasenaInicial: z.string().min(12),
+const esqUsuarioId = z.object({ usuarioId: z.string().uuid() })
+
+export const reintentarSincronizacion = accionGestorCuentas
+  .schema(esqUsuarioId)
+  .action(async ({ parsedInput, ctx }) => {
+    if (!keycloakActivo()) throw new Error('Keycloak no está activo: la sincronización queda pendiente.')
+    const { contexto, actor } = contextoDe(ctx)
+    await exigirCuentaGestionable(contexto, actor, parsedInput.usuarioId)
+    return sincronizarEstadoIdp(parsedInput.usuarioId, contexto, actor)
+  })
+
+export const reenviarInvitacionCuenta = accionGestorCuentas
+  .schema(esqUsuarioId)
+  .action(async ({ parsedInput, ctx }) => {
+    const { contexto, actor } = contextoDe(ctx)
+    await reenviarInvitacion(contexto, actor, parsedInput.usuarioId)
+    return { enviada: true }
+  })
+
+export const restablecerContrasenaCuenta = accionGestorCuentas
+  .schema(esqUsuarioId)
+  .action(async ({ parsedInput, ctx }) => {
+    const { contexto, actor } = contextoDe(ctx)
+    return restablecerContrasenaTemporal(contexto, actor, parsedInput.usuarioId)
+  })
+
+const esqCambiarCorreo = z.object({
+  usuarioId: z.string().uuid(),
+  correo: z.string().trim().toLowerCase().email(),
 })
 
-export const otorgarAcceso = accionSuperadmin
-  .schema(esqOtorgarAcceso)
+export const cambiarCorreoUsuario = accionGestorCuentas
+  .schema(esqCambiarCorreo)
   .action(async ({ parsedInput, ctx }) => {
-    return conContextoRLS(
-      db,
-      { usuarioId: ctx.usuario.id, rol: ctx.usuario.rol as 'superadmin' },
-      async (tx) => {
-        const [personaBase] = await tx.select().from(persona).where(eq(persona.id, parsedInput.personaId)).limit(1)
-        if (!personaBase) throw new Error('La persona indicada no existe')
+    const { contexto, actor } = contextoDe(ctx)
+    await cambiarCorreoCuenta(contexto, actor, parsedInput.usuarioId, parsedInput.correo)
+    return { correo: parsedInput.correo }
+  })
 
-        const [nuevoUsuario] = await tx
-          .insert(usuario)
-          .values({
-            personaId: personaBase.id,
-            correo: parsedInput.correo,
-            rol: parsedInput.rol,
-          })
-          .returning()
+const esqCambiarRol = z.object({
+  usuarioId: z.string().uuid(),
+  rol: z.enum(ROLES),
+})
 
-        const contrasenaHash = await hash(parsedInput.contrasenaInicial, {
-          memoryCost: 65536,
-          timeCost: 3,
-          parallelism: 4,
-        })
-        const baId = nuevoUsuario!.id
+export const cambiarRolUsuario = accionGestorCuentas
+  .schema(esqCambiarRol)
+  .action(async ({ parsedInput, ctx }) => {
+    const { contexto, actor } = contextoDe(ctx)
+    return cambiarRolCuenta(contexto, actor, parsedInput.usuarioId, parsedInput.rol)
+  })
 
-        await tx.insert(baUser).values({
-          id: baId,
-          name: `${personaBase.primerNombre} ${personaBase.primerApellido}`,
-          email: parsedInput.correo,
-          emailVerified: true,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
-
-        await tx.insert(baAccount).values({
-          id: baId,
-          accountId: baId,
-          providerId: 'credential',
-          issuer: createLocalAccountIssuer('credential'),
-          userId: baId,
-          password: contrasenaHash,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
-
-        await registrarAuditoria(tx, {
-          actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-          accion: 'otorgar_acceso', entidad: 'usuario', entidadId: nuevoUsuario!.id,
-        })
-
-        return nuevoUsuario!
-      }
-    )
+export const exigirTotpUsuario = accionGestorCuentas
+  .schema(esqUsuarioId)
+  .action(async ({ parsedInput, ctx }) => {
+    const { contexto, actor } = contextoDe(ctx)
+    await exigirTotpCuenta(contexto, actor, parsedInput.usuarioId)
+    return { exigido: true }
   })

@@ -78,6 +78,27 @@
       "when": 1789200000000,
       "tag": "0010_anio_lectivo_un_solo_activo",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789300000000,
+      "tag": "0011_usuario_sincronizacion_idp",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1789400000000,
+      "tag": "0012_rls_administrador_y_roles",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1789500000000,
+      "tag": "0013_catalogos_financieros_unicos",
+      "breakpoints": true
     }
   ]
 }

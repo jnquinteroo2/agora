@@ -1,3 +1,4 @@
+import { prepararRolConsultaRls } from './rol-consulta-rls'
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql'
 import postgres, { type Sql } from 'postgres'
@@ -5,6 +6,7 @@ import { drizzle } from 'drizzle-orm/postgres-js'
 import { migrate } from 'drizzle-orm/postgres-js/migrator'
 import { join } from 'path'
 import * as e from '../../src/datos/esquema'
+import type * as ModuloCliente from '../../src/datos/cliente'
 import type { DB } from '../../src/datos/cliente'
 
 const MIGRATIONS_DIR = join(__dirname, '../../src/datos/migraciones')
@@ -13,12 +15,24 @@ const ACTOR_ID = '01900000-0000-7000-0000-000000000001'
 let _dbApp: DB | undefined = undefined
 
 vi.mock('../../src/datos/cliente', async (importOriginal) => {
-  const original = await importOriginal<typeof import('../../src/datos/cliente')>()
+  const original = await importOriginal<typeof ModuloCliente>()
   return {
     ...original,
     db: {} as DB,
-    conContextoRLS: async <T>(base: DB, ctx: Parameters<typeof original.conContextoRLS>[1], fn: Parameters<typeof original.conContextoRLS>[2]) =>
-      original.conContextoRLS(_dbApp!, ctx, fn as (tx: Parameters<typeof original.conContextoRLS>[2] extends (tx: infer TX) => unknown ? TX : never) => Promise<T>),
+    conContextoRLS: async <T>(
+      base: DB,
+      ctx: Parameters<typeof original.conContextoRLS>[1],
+      fn: Parameters<typeof original.conContextoRLS>[2]
+    ) =>
+      original.conContextoRLS(
+        _dbApp!,
+        ctx,
+        fn as (
+          tx: Parameters<typeof original.conContextoRLS>[2] extends (tx: infer TX) => unknown
+            ? TX
+            : never
+        ) => Promise<T>
+      ),
   }
 })
 
@@ -43,9 +57,7 @@ let _sqlApp: Sql
 let _contenedor: StartedPostgreSqlContainer
 
 beforeAll(async () => {
-  _contenedor = await new PostgreSqlContainer('postgres:18-alpine')
-    .withExposedPorts(5432)
-    .start()
+  _contenedor = await new PostgreSqlContainer('postgres:18-alpine').withExposedPorts(5432).start()
 
   const urlRoot = _contenedor.getConnectionUri()
   _sqlRoot = postgres(urlRoot)
@@ -57,6 +69,7 @@ beforeAll(async () => {
   await _sqlRoot`GRANT CREATE ON DATABASE test TO agora_migraciones`
   await _sqlRoot`GRANT USAGE, CREATE ON SCHEMA public TO agora_migraciones`
   await _sqlRoot`GRANT USAGE ON SCHEMA public TO agora_app`
+  await prepararRolConsultaRls(_sqlRoot)
   await _sqlRoot`
     ALTER DEFAULT PRIVILEGES FOR ROLE agora_migraciones IN SCHEMA public
       GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO agora_app;
@@ -66,7 +79,10 @@ beforeAll(async () => {
       GRANT USAGE, SELECT ON SEQUENCES TO agora_app;
   `
 
-  const urlMigraciones = urlRoot.replace(/postgres:\/\/[^@]+@/, 'postgres://agora_migraciones:test@')
+  const urlMigraciones = urlRoot.replace(
+    /postgres:\/\/[^@]+@/,
+    'postgres://agora_migraciones:test@'
+  )
   const sqlMigraciones = postgres(urlMigraciones)
   const dbMig = drizzle(sqlMigraciones)
   await migrate(dbMig, { migrationsFolder: MIGRATIONS_DIR })
@@ -84,7 +100,6 @@ afterAll(async () => {
 })
 
 describe('crearAnioLectivo — flujo completo Server Action → conContextoRLS → BD', () => {
-
   it('crea un año lectivo, confirma fila en BD y registra auditoría', async () => {
     const { crearAnioLectivo } = await import('../../src/acciones/configuracion/anio-lectivo')
 
@@ -105,14 +120,18 @@ describe('crearAnioLectivo — flujo completo Server Action → conContextoRLS �
     `
     expect(fila, 'la fila debe existir en la BD').toBeDefined()
     expect(fila!['activo']).toBe(false)
-    console.log(`[ACCIÓN] crearAnioLectivo → BD confirmada: id=${fila!['id']}, nombre=${fila!['nombre']}`)
+    console.log(
+      `[ACCIÓN] crearAnioLectivo → BD confirmada: id=${fila!['id']}, nombre=${fila!['nombre']}`
+    )
 
     const [audRow] = await _sqlRoot`
       SELECT accion, entidad, actor_rol FROM auditoria WHERE entidad = 'anio_lectivo' ORDER BY creado_en DESC LIMIT 1
     `
     expect(audRow!['accion']).toBe('crear')
     expect(audRow!['actor_rol']).toBe('superadmin')
-    console.log(`[AUDITORIA] ${audRow!['accion']} / ${audRow!['entidad']} / actor_rol=${audRow!['actor_rol']} ✓`)
+    console.log(
+      `[AUDITORIA] ${audRow!['accion']} / ${audRow!['entidad']} / actor_rol=${audRow!['actor_rol']} ✓`
+    )
   })
 
   it('rechaza input inválido con validationErrors sin tocar la BD', async () => {
@@ -134,10 +153,21 @@ describe('crearAnioLectivo — flujo completo Server Action → conContextoRLS �
   })
 
   it('activarAnioLectivo desactiva los demás y activa el seleccionado', async () => {
-    const { crearAnioLectivo, activarAnioLectivo } = await import('../../src/acciones/configuracion/anio-lectivo')
+    const { crearAnioLectivo, activarAnioLectivo } =
+      await import('../../src/acciones/configuracion/anio-lectivo')
 
-    const r1 = await crearAnioLectivo({ nombre: 'ACT-2031', inicio: '2031-01-01', fin: '2031-12-31', activo: false })
-    const r2 = await crearAnioLectivo({ nombre: 'ACT-2032', inicio: '2032-01-01', fin: '2032-12-31', activo: false })
+    const r1 = await crearAnioLectivo({
+      nombre: 'ACT-2031',
+      inicio: '2031-01-01',
+      fin: '2031-12-31',
+      activo: false,
+    })
+    const r2 = await crearAnioLectivo({
+      nombre: 'ACT-2032',
+      inicio: '2032-01-01',
+      fin: '2032-12-31',
+      activo: false,
+    })
     const id2031 = r1!.data!.id
     const id2032 = r2!.data!.id
 
@@ -152,5 +182,4 @@ describe('crearAnioLectivo — flujo completo Server Action → conContextoRLS �
     expect(activos[0]!['id']).toBe(id2032)
     console.log(`[ACCIÓN] activarAnioLectivo → único activo confirmado: ${id2032} ✓`)
   })
-
 })

@@ -4,10 +4,10 @@ import { cn } from './cn'
 const greca = cva('greca', {
   variants: {
     tono: {
-      laurel: 'text-laurel',
-      niebla: 'text-niebla',
-      piedra: 'text-piedra',
-      hueso: 'text-hueso/45',
+      laurel: 'text-laurel-marca',
+      niebla: 'text-borde',
+      piedra: 'text-texto-secundario',
+      hueso: 'text-superficie/45',
     },
     extension: {
       completa: 'w-full',
@@ -26,16 +26,5 @@ export function Greca({
 }
 
 export function FileteLaurel({ className }: { className?: string }) {
-  return <div aria-hidden="true" className={cn('h-[3px] w-full bg-laurel', className)} />
-}
-
-export function Lambda({ className }: { className?: string }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={cn('block font-display leading-none select-none', className)}
-    >
-      Λ
-    </span>
-  )
+  return <div aria-hidden="true" className={cn('h-[3px] w-full bg-laurel-marca', className)} />
 }

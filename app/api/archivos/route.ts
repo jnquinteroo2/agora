@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createHash } from 'crypto'
 import sharp from 'sharp'
 import { auth } from '@/src/auth/config'
@@ -82,7 +83,10 @@ export async function POST(req: NextRequest) {
   let datos = Buffer.from(await file.arrayBuffer())
 
   if (!verificarBytesMagicos(datos, mime)) {
-    return NextResponse.json({ error: 'El contenido no coincide con el tipo declarado' }, { status: 415 })
+    return NextResponse.json(
+      { error: 'El contenido no coincide con el tipo declarado' },
+      { status: 415 }
+    )
   }
 
   const formatoSharp = FORMATO_SHARP_POR_MIME[mime]
@@ -106,7 +110,10 @@ export async function POST(req: NextRequest) {
   try {
     nuevoArchivo = await conContextoRLS(
       db,
-      { usuarioId: usuarioActual.id, rol: usuarioActual.rol as 'superadmin' | 'docente' | 'estudiante' },
+      {
+        usuarioId: usuarioActual.id,
+        rol: usuarioActual.rol as 'superadmin' | 'docente' | 'estudiante',
+      },
       async (tx) => {
         const [fila] = await tx
           .insert(archivo)
@@ -135,7 +142,10 @@ export async function POST(req: NextRequest) {
       }
     )
   } catch {
-    return NextResponse.json({ error: 'No se pudo registrar el archivo. Verifique su rol y permisos.' }, { status: 403 })
+    return NextResponse.json(
+      { error: 'No se pudo registrar el archivo. Verifique su rol y permisos.' },
+      { status: 403 }
+    )
   }
 
   return NextResponse.json(nuevoArchivo, { status: 201 })

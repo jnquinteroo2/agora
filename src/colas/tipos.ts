@@ -1,6 +1,7 @@
 export const COLAS = {
   GENERAR_PDF: 'pdf.generar',
   LIMPIAR_RATE_LIMIT: 'rate-limit.limpiar',
+  SINCRONIZAR_IDP: 'idp.sincronizar',
 } as const
 
 export interface TrabajoPDF {

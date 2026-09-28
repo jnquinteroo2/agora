@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import { exigirStackLocal } from './stack-local'
 
 exigirStackLocal()
@@ -24,11 +24,7 @@ const RUTAS = [
 
 const RUTA_INEXISTENTE = '/esta-pagina-no-existe'
 
-async function revisar(
-  page: import('@playwright/test').Page,
-  ruta: string,
-  estadoEsperado: number
-) {
+async function revisar(page: Page, ruta: string, estadoEsperado: number) {
   const errores: string[] = []
   page.on('console', (mensaje) => {
     if (mensaje.type() !== 'error') return
@@ -53,17 +49,14 @@ async function revisar(
   const violaciones = await page.evaluate(
     () => (window as unknown as { __violacionesCsp: string[] }).__violacionesCsp
   )
-  const scriptsSinNonce = await page.evaluate(
-    () =>
-      [...document.querySelectorAll('script')].filter(
-        (script) =>
-          !script.nonce && !script.getAttribute('nonce') && script.type !== 'application/json'
-      ).length
-  )
+  const html = (await respuesta?.text()) ?? ''
+  const scriptsSinNonce = [...html.matchAll(/<script\b[^>]*>/g)].filter(
+    (etiqueta) => !/\bnonce=/.test(etiqueta[0])
+  ).length
 
   expect(violaciones, `${ruta}: violaciones de CSP`).toEqual([])
   expect(errores, `${ruta}: errores de consola`).toEqual([])
-  expect(scriptsSinNonce, `${ruta}: scripts sin nonce`).toBe(0)
+  expect(scriptsSinNonce, `${ruta}: scripts sin nonce en el HTML del servidor`).toBe(0)
 }
 
 for (const ruta of RUTAS) {

@@ -1,3 +1,4 @@
+import { prepararRolConsultaRls } from './rol-consulta-rls'
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql'
 import postgres, { type Sql } from 'postgres'
@@ -5,6 +6,7 @@ import { drizzle } from 'drizzle-orm/postgres-js'
 import { migrate } from 'drizzle-orm/postgres-js/migrator'
 import { join } from 'path'
 import * as e from '../../src/datos/esquema'
+import type * as ModuloCliente from '../../src/datos/cliente'
 import type { DB } from '../../src/datos/cliente'
 
 const MIGRATIONS_DIR = join(__dirname, '../../src/datos/migraciones')
@@ -18,7 +20,7 @@ let _dbApp: DB | undefined = undefined
 let actorActual: Actor = { id: '', rol: 'superadmin' }
 
 vi.mock('../../src/datos/cliente', async (importOriginal) => {
-  const original = await importOriginal<typeof import('../../src/datos/cliente')>()
+  const original = await importOriginal<typeof ModuloCliente>()
   return {
     ...original,
     db: {} as DB,
@@ -30,7 +32,11 @@ vi.mock('../../src/datos/cliente', async (importOriginal) => {
       original.conContextoRLS(
         _dbApp!,
         ctx,
-        fn as (tx: Parameters<typeof original.conContextoRLS>[2] extends (tx: infer TX) => unknown ? TX : never) => Promise<T>
+        fn as (
+          tx: Parameters<typeof original.conContextoRLS>[2] extends (tx: infer TX) => unknown
+            ? TX
+            : never
+        ) => Promise<T>
       ),
   }
 })
@@ -74,9 +80,7 @@ async function ins<T>(promesa: Promise<T[]>): Promise<T> {
 }
 
 beforeAll(async () => {
-  _contenedor = await new PostgreSqlContainer('postgres:18-alpine')
-    .withExposedPorts(5432)
-    .start()
+  _contenedor = await new PostgreSqlContainer('postgres:18-alpine').withExposedPorts(5432).start()
 
   const urlRoot = _contenedor.getConnectionUri()
   _sqlRoot = postgres(urlRoot)
@@ -88,6 +92,7 @@ beforeAll(async () => {
   await _sqlRoot`GRANT CREATE ON DATABASE test TO agora_migraciones`
   await _sqlRoot`GRANT USAGE, CREATE ON SCHEMA public TO agora_migraciones`
   await _sqlRoot`GRANT USAGE ON SCHEMA public TO agora_app`
+  await prepararRolConsultaRls(_sqlRoot)
   await _sqlRoot`
     ALTER DEFAULT PRIVILEGES FOR ROLE agora_migraciones IN SCHEMA public
       GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO agora_app;
@@ -97,7 +102,10 @@ beforeAll(async () => {
       GRANT USAGE, SELECT ON SEQUENCES TO agora_app;
   `
 
-  const urlMigraciones = urlRoot.replace(/postgres:\/\/[^@]+@/, 'postgres://agora_migraciones:test@')
+  const urlMigraciones = urlRoot.replace(
+    /postgres:\/\/[^@]+@/,
+    'postgres://agora_migraciones:test@'
+  )
   const sqlMigraciones = postgres(urlMigraciones)
   const dbMig = drizzle(sqlMigraciones)
   await migrate(dbMig, { migrationsFolder: MIGRATIONS_DIR })
@@ -119,16 +127,72 @@ afterAll(async () => {
 async function sembrar() {
   const dbRoot = drizzle(_sqlRoot, { schema: e })
 
-  const anio = await ins(dbRoot.insert(e.anioLectivo).values({ nombre: 'CAL-TEST-2025', inicio: '2025-01-01', fin: '2025-12-31', activo: true }).returning())
-  const jornada = await ins(dbRoot.insert(e.jornada).values({ codigo: 'D', nombre: 'Diurna' }).returning())
-  const ciclo = await ins(dbRoot.insert(e.ciclo).values({ codigo: '4A-CAL', gradoEquivalente: 'Octavo', esquemaPeriodos: 'cuatro' }).returning())
-  const area = await ins(dbRoot.insert(e.area).values({ nombre: 'Matemáticas CAL-TEST' }).returning())
-  const asig = await ins(dbRoot.insert(e.asignatura).values({ areaId: area.id, nombre: 'Álgebra CAL-TEST' }).returning())
-  const otraAsig = await ins(dbRoot.insert(e.asignatura).values({ areaId: area.id, nombre: 'Geometría CAL-TEST' }).returning())
-  const curso = await ins(dbRoot.insert(e.curso).values({ anioLectivoId: anio.id, cicloId: ciclo.id, jornadaId: jornada.id, nombre: 'Curso CAL-TEST' }).returning())
+  const anio = await ins(
+    dbRoot
+      .insert(e.anioLectivo)
+      .values({ nombre: 'CAL-TEST-2025', inicio: '2025-01-01', fin: '2025-12-31', activo: true })
+      .returning()
+  )
+  const jornada = await ins(
+    dbRoot.insert(e.jornada).values({ codigo: 'D', nombre: 'Diurna' }).returning()
+  )
+  const ciclo = await ins(
+    dbRoot
+      .insert(e.ciclo)
+      .values({ codigo: '4A-CAL', gradoEquivalente: 'Octavo', esquemaPeriodos: 'cuatro' })
+      .returning()
+  )
+  const area = await ins(
+    dbRoot.insert(e.area).values({ nombre: 'Matemáticas CAL-TEST' }).returning()
+  )
+  const asig = await ins(
+    dbRoot.insert(e.asignatura).values({ areaId: area.id, nombre: 'Álgebra CAL-TEST' }).returning()
+  )
+  const otraAsig = await ins(
+    dbRoot
+      .insert(e.asignatura)
+      .values({ areaId: area.id, nombre: 'Geometría CAL-TEST' })
+      .returning()
+  )
+  const curso = await ins(
+    dbRoot
+      .insert(e.curso)
+      .values({
+        anioLectivoId: anio.id,
+        cicloId: ciclo.id,
+        jornadaId: jornada.id,
+        nombre: 'Curso CAL-TEST',
+      })
+      .returning()
+  )
 
-  const periodoAbierto = await ins(dbRoot.insert(e.periodo).values({ anioLectivoId: anio.id, numero: 1, esquema: 'cuatro', inicio: '2025-01-01', fin: '2025-03-31', notasAbiertas: true }).returning())
-  const periodoCerrado = await ins(dbRoot.insert(e.periodo).values({ anioLectivoId: anio.id, numero: 2, esquema: 'cuatro', inicio: '2025-04-01', fin: '2025-06-30', notasAbiertas: false, cerradoEn: new Date() }).returning())
+  const periodoAbierto = await ins(
+    dbRoot
+      .insert(e.periodo)
+      .values({
+        anioLectivoId: anio.id,
+        numero: 1,
+        esquema: 'cuatro',
+        inicio: '2025-01-01',
+        fin: '2025-03-31',
+        notasAbiertas: true,
+      })
+      .returning()
+  )
+  const periodoCerrado = await ins(
+    dbRoot
+      .insert(e.periodo)
+      .values({
+        anioLectivoId: anio.id,
+        numero: 2,
+        esquema: 'cuatro',
+        inicio: '2025-04-01',
+        fin: '2025-06-30',
+        notasAbiertas: false,
+        cerradoEn: new Date(),
+      })
+      .returning()
+  )
 
   await dbRoot.insert(e.escalaValoracion).values([
     { anioLectivoId: anio.id, nivel: 'Bajo', desde: '1.0', hasta: '2.9', orden: 1 },
@@ -137,18 +201,98 @@ async function sembrar() {
     { anioLectivoId: anio.id, nivel: 'Superior', desde: '4.6', hasta: '5.0', orden: 4 },
   ])
 
-  const pDocenteAsignado = await ins(dbRoot.insert(e.persona).values({ tipoDocumento: 'CC', numeroDocumento: '30000001', primerNombre: 'Docente', primerApellido: 'Asignado' }).returning())
-  const uDocenteAsignado = await ins(dbRoot.insert(e.usuario).values({ personaId: pDocenteAsignado.id, correo: 'docente_asignado@cal-test.com', rol: 'docente' }).returning())
-  await dbRoot.insert(e.asignacionDocente).values({ anioLectivoId: anio.id, docenteId: uDocenteAsignado.id, asignaturaId: asig.id, cursoId: curso.id })
+  const pDocenteAsignado = await ins(
+    dbRoot
+      .insert(e.persona)
+      .values({
+        tipoDocumento: 'CC',
+        numeroDocumento: '30000001',
+        primerNombre: 'Docente',
+        primerApellido: 'Asignado',
+      })
+      .returning()
+  )
+  const uDocenteAsignado = await ins(
+    dbRoot
+      .insert(e.usuario)
+      .values({
+        personaId: pDocenteAsignado.id,
+        correo: 'docente_asignado@cal-test.com',
+        rol: 'docente',
+      })
+      .returning()
+  )
+  await dbRoot
+    .insert(e.asignacionDocente)
+    .values({
+      anioLectivoId: anio.id,
+      docenteId: uDocenteAsignado.id,
+      asignaturaId: asig.id,
+      cursoId: curso.id,
+    })
 
-  const pDocenteNoAsignado = await ins(dbRoot.insert(e.persona).values({ tipoDocumento: 'CC', numeroDocumento: '30000002', primerNombre: 'Docente', primerApellido: 'SinAsignar' }).returning())
-  const uDocenteNoAsignado = await ins(dbRoot.insert(e.usuario).values({ personaId: pDocenteNoAsignado.id, correo: 'docente_sin_asignar@cal-test.com', rol: 'docente' }).returning())
+  const pDocenteNoAsignado = await ins(
+    dbRoot
+      .insert(e.persona)
+      .values({
+        tipoDocumento: 'CC',
+        numeroDocumento: '30000002',
+        primerNombre: 'Docente',
+        primerApellido: 'SinAsignar',
+      })
+      .returning()
+  )
+  const uDocenteNoAsignado = await ins(
+    dbRoot
+      .insert(e.usuario)
+      .values({
+        personaId: pDocenteNoAsignado.id,
+        correo: 'docente_sin_asignar@cal-test.com',
+        rol: 'docente',
+      })
+      .returning()
+  )
 
-  const pSuperadmin = await ins(dbRoot.insert(e.persona).values({ tipoDocumento: 'CC', numeroDocumento: '30000003', primerNombre: 'Super', primerApellido: 'Admin' }).returning())
-  const uSuperadmin = await ins(dbRoot.insert(e.usuario).values({ personaId: pSuperadmin.id, correo: 'superadmin@cal-test.com', rol: 'superadmin' }).returning())
+  const pSuperadmin = await ins(
+    dbRoot
+      .insert(e.persona)
+      .values({
+        tipoDocumento: 'CC',
+        numeroDocumento: '30000003',
+        primerNombre: 'Super',
+        primerApellido: 'Admin',
+      })
+      .returning()
+  )
+  const uSuperadmin = await ins(
+    dbRoot
+      .insert(e.usuario)
+      .values({ personaId: pSuperadmin.id, correo: 'superadmin@cal-test.com', rol: 'superadmin' })
+      .returning()
+  )
 
-  const pEst = await ins(dbRoot.insert(e.persona).values({ tipoDocumento: 'TI', numeroDocumento: '40000001', primerNombre: 'Estudiante', primerApellido: 'CAL-TEST' }).returning())
-  const matricula = await ins(dbRoot.insert(e.matricula).values({ anioLectivoId: anio.id, estudianteId: pEst.id, cursoId: curso.id, estado: 'activo' }).returning())
+  const pEst = await ins(
+    dbRoot
+      .insert(e.persona)
+      .values({
+        tipoDocumento: 'TI',
+        numeroDocumento: '40000001',
+        primerNombre: 'Estudiante',
+        primerApellido: 'CAL-TEST',
+      })
+      .returning()
+  )
+  const matricula = await ins(
+    dbRoot
+      .insert(e.matricula)
+      .values({
+        anioLectivoId: anio.id,
+        estudianteId: pEst.id,
+        cursoId: curso.id,
+        estado: 'activo',
+      })
+      .returning()
+  )
 
   ids = {
     anioId: anio.id,
@@ -181,9 +325,12 @@ describe('registrarCalificacion — Server Action real → conContextoRLS → BD
     expect(resultado?.data?.nivelDesempeno).toBe('Alto')
     expect(resultado?.data?.fallas).toBe(1)
 
-    const [fila] = await _sqlRoot`SELECT nota, nivel_desempeno FROM calificacion WHERE matricula_id = ${ids.matriculaId} AND asignatura_id = ${ids.asignaturaId} AND periodo_id = ${ids.periodoAbiertoId}`
+    const [fila] =
+      await _sqlRoot`SELECT nota, nivel_desempeno FROM calificacion WHERE matricula_id = ${ids.matriculaId} AND asignatura_id = ${ids.asignaturaId} AND periodo_id = ${ids.periodoAbiertoId}`
     expect(fila!['nota']).toBe('4.2')
-    console.log(`[ACCIÓN] registrarCalificacion (docente asignado) → nota=${fila!['nota']} nivel=${fila!['nivel_desempeno']} ✓`)
+    console.log(
+      `[ACCIÓN] registrarCalificacion (docente asignado) → nota=${fila!['nota']} nivel=${fila!['nivel_desempeno']} ✓`
+    )
   })
 
   it('actualizar una nota existente escribe calificacion_historial con la nota anterior', async () => {
@@ -228,7 +375,8 @@ describe('registrarCalificacion — Server Action real → conContextoRLS → BD
     expect(resultado?.serverError).toBeDefined()
     console.log(`[RLS] docente sin asignación → rechazado: ${resultado?.serverError} ✓`)
 
-    const filas = await _sqlRoot`SELECT id FROM calificacion WHERE asignatura_id = ${ids.otraAsignaturaId}`
+    const filas =
+      await _sqlRoot`SELECT id FROM calificacion WHERE asignatura_id = ${ids.otraAsignaturaId}`
     expect(filas).toHaveLength(0)
   })
 
@@ -244,9 +392,12 @@ describe('registrarCalificacion — Server Action real → conContextoRLS → BD
       fallas: 0,
     })
 
-    expect(resultado?.serverError).toBe('El periodo está cerrado: no se pueden registrar ni modificar notas')
+    expect(resultado?.serverError).toBe(
+      'El periodo está cerrado: no se pueden registrar ni modificar notas'
+    )
 
-    const filas = await _sqlRoot`SELECT id FROM calificacion WHERE periodo_id = ${ids.periodoCerradoId}`
+    const filas =
+      await _sqlRoot`SELECT id FROM calificacion WHERE periodo_id = ${ids.periodoCerradoId}`
     expect(filas).toHaveLength(0)
   })
 
@@ -254,8 +405,12 @@ describe('registrarCalificacion — Server Action real → conContextoRLS → BD
     actorActual = { id: ids.superadminId, rol: 'superadmin' }
     const { bloquearCalificacion } = await import('../../src/acciones/calificaciones/calificacion')
 
-    const [filaActual] = await _sqlRoot`SELECT id FROM calificacion WHERE matricula_id = ${ids.matriculaId} AND asignatura_id = ${ids.asignaturaId} AND periodo_id = ${ids.periodoAbiertoId}`
-    const bloqueo = await bloquearCalificacion({ calificacionId: filaActual!['id'] as string, bloqueado: true })
+    const [filaActual] =
+      await _sqlRoot`SELECT id FROM calificacion WHERE matricula_id = ${ids.matriculaId} AND asignatura_id = ${ids.asignaturaId} AND periodo_id = ${ids.periodoAbiertoId}`
+    const bloqueo = await bloquearCalificacion({
+      calificacionId: filaActual!['id'] as string,
+      bloqueado: true,
+    })
     expect(bloqueo?.serverError, bloqueo?.serverError).toBeUndefined()
 
     actorActual = { id: ids.docenteAsignadoId, rol: 'docente' }

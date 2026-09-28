@@ -38,18 +38,21 @@ export default async function GaleriaPage() {
       <Seccion aire="md" filete="arriba">
         <Contenedor ancho="amplio">
           {albumes.length > 0 ? (
-            <ul className="grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {albumes.map((a) => (
                 <li key={a.id}>
-                  <Link href={`/galeria/${a.slug}` as Route} className="group flex flex-col gap-4">
-                    <div className="relative aspect-[3/2] overflow-hidden bg-niebla">
+                  <Link
+                    href={`/galeria/${a.slug}` as Route}
+                    className="group presionable flex h-full flex-col overflow-hidden rounded-tarjeta border border-borde shadow-sutil"
+                  >
+                    <div className="relative aspect-[3/2] overflow-hidden border-b border-borde">
                       {a.metaImgId ? (
                         <Image
                           src={`/api/galeria/imagen/${a.metaImgId}`}
                           alt=""
                           fill
                           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 28rem"
-                          className="object-cover transition-transform duration-[var(--duration-slow)] ease-[var(--ease-out)] group-hover:scale-[1.02] motion-reduce:transition-none"
+                          className="object-cover transition-transform duration-[var(--duration-slow)] ease-[var(--ease-out)] motion-reduce:transition-none [@media(hover:hover)_and_(pointer:fine)]:group-hover:scale-[1.02]"
                         />
                       ) : (
                         <div className="flex h-full items-center justify-center">
@@ -57,14 +60,16 @@ export default async function GaleriaPage() {
                         </div>
                       )}
                     </div>
-                    <div className="flex flex-col gap-1.5">
-                      <h2 className="font-display text-rubro font-medium text-tinta decoration-carmin underline-offset-4 group-hover:underline">
+                    <div className="flex flex-col gap-1.5 p-5">
+                      <h2 className="font-titulo text-rubro font-medium text-texto decoration-acento-texto decoration-2 underline-offset-4 group-hover:underline">
                         {a.titulo}
                       </h2>
                       {a.subtitulo ? (
-                        <p className="prosa text-nota leading-relaxed text-piedra">{a.subtitulo}</p>
+                        <p className="prosa text-nota leading-relaxed text-texto-secundario">
+                          {a.subtitulo}
+                        </p>
                       ) : null}
-                      <p className="flex flex-wrap gap-x-3 text-menudo text-piedra">
+                      <p className="flex flex-wrap gap-x-3 text-menudo text-texto-secundario">
                         <span className="font-mono font-tnum">
                           {a.fotos === 1 ? '1 fotografía' : `${a.fotos} fotografías`}
                         </span>

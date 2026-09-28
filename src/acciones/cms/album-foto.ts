@@ -1,4 +1,4 @@
-"use server"
+'use server'
 
 import { z } from 'zod'
 import { eq } from 'drizzle-orm'
@@ -30,8 +30,11 @@ export const agregarFotoAlbum = accionSuperadmin
       if (!nueva) throw new Error('No se pudo agregar la foto al álbum')
 
       await registrarAuditoria(tx, {
-        actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-        accion: 'agregar_foto', entidad: 'cms_album_foto', entidadId: nueva.id,
+        actorId: ctx.usuario.id,
+        actorRol: ctx.usuario.rol,
+        accion: 'agregar_foto',
+        entidad: 'cms_album_foto',
+        entidadId: nueva.id,
       })
 
       return nueva
@@ -52,8 +55,11 @@ export const eliminarFotoAlbum = accionSuperadmin
       if (!eliminada) throw new Error('La foto indicada no existe en este álbum')
 
       await registrarAuditoria(tx, {
-        actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-        accion: 'eliminar_foto', entidad: 'cms_album_foto', entidadId: eliminada.id,
+        actorId: ctx.usuario.id,
+        actorRol: ctx.usuario.rol,
+        accion: 'eliminar_foto',
+        entidad: 'cms_album_foto',
+        entidadId: eliminada.id,
       })
 
       return eliminada

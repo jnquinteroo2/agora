@@ -84,22 +84,22 @@ export default async function EntradaBlogPage({ params }: Parametros) {
             />
             <time
               dateTime={fechaMaquina(entrada.creadoEn)}
-              className="versalitas text-menudo text-piedra"
+              className="text-nota font-medium text-texto-secundario"
             >
               {fechaLarga(entrada.creadoEn)}
             </time>
-            <h1 className="equilibrado font-display text-portada font-medium text-tinta">
+            <h1 className="equilibrado font-titulo text-portada font-medium text-texto">
               {entrada.titulo}
             </h1>
             {entrada.subtitulo ? (
-              <p className="prosa font-display text-guia leading-snug text-piedra italic">
+              <p className="prosa font-titulo text-guia leading-snug text-texto-secundario italic">
                 {entrada.subtitulo}
               </p>
             ) : null}
           </header>
 
           {entrada.metaImgId ? (
-            <div className="relative aspect-[3/2] overflow-hidden bg-niebla">
+            <div className="relative aspect-[3/2] overflow-hidden rounded-tarjeta border border-borde">
               <Image
                 src={`/api/galeria/imagen/${entrada.metaImgId}`}
                 alt=""
@@ -112,7 +112,7 @@ export default async function EntradaBlogPage({ params }: Parametros) {
           ) : null}
 
           {entrada.cuerpo ? (
-            <div className="flex max-w-[62ch] flex-col gap-[1.1em] border-t border-niebla pt-8 font-display text-[1.25rem] leading-[1.65] text-tinta">
+            <div className="flex max-w-[62ch] flex-col gap-[1.1em] border-t border-borde pt-8 font-titulo text-[1.25rem] leading-[1.65] text-texto">
               {parrafos(entrada.cuerpo).map((texto, indice) => (
                 <p key={indice} className="prosa whitespace-pre-line">
                   {texto}
@@ -133,28 +133,28 @@ export default async function EntradaBlogPage({ params }: Parametros) {
           {anterior || siguiente ? (
             <ul className="grid gap-x-10 sm:grid-cols-2">
               {anterior ? (
-                <li className="border-t border-niebla">
+                <li className="border-t border-borde">
                   <Link
                     href={`/blog/${anterior.slug}` as Route}
                     rel="prev"
                     className="group flex flex-col gap-1 py-4 pr-6"
                   >
-                    <span className="versalitas text-menudo text-piedra">Anterior</span>
-                    <span className="font-display text-rubro text-tinta decoration-carmin underline-offset-4 group-hover:underline">
+                    <span className="text-nota font-medium text-texto-secundario">Anterior</span>
+                    <span className="font-titulo text-rubro text-texto decoration-acento-texto underline-offset-4 group-hover:underline">
                       {anterior.titulo}
                     </span>
                   </Link>
                 </li>
               ) : null}
               {siguiente ? (
-                <li className="border-t border-niebla sm:col-start-2 sm:text-right">
+                <li className="border-t border-borde sm:col-start-2 sm:text-right">
                   <Link
                     href={`/blog/${siguiente.slug}` as Route}
                     rel="next"
                     className="group flex flex-col gap-1 py-4 sm:pl-6"
                   >
-                    <span className="versalitas text-menudo text-piedra">Siguiente</span>
-                    <span className="font-display text-rubro text-tinta decoration-carmin underline-offset-4 group-hover:underline">
+                    <span className="text-nota font-medium text-texto-secundario">Siguiente</span>
+                    <span className="font-titulo text-rubro text-texto decoration-acento-texto underline-offset-4 group-hover:underline">
                       {siguiente.titulo}
                     </span>
                   </Link>
@@ -164,7 +164,7 @@ export default async function EntradaBlogPage({ params }: Parametros) {
           ) : null}
           <Link
             href="/blog"
-            className="transicion-ui w-fit text-nota text-tinta underline decoration-piedra underline-offset-4 hover:decoration-carmin"
+            className="transicion-ui w-fit text-nota text-texto underline decoration-texto-secundario underline-offset-4 hover:decoration-acento-texto"
           >
             Todas las noticias
           </Link>

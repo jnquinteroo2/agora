@@ -1,3 +1,4 @@
+import { prepararRolConsultaRls } from './rol-consulta-rls'
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql'
 import postgres, { type Sql } from 'postgres'
@@ -6,6 +7,7 @@ import { migrate } from 'drizzle-orm/postgres-js/migrator'
 import { join } from 'path'
 import { eq } from 'drizzle-orm'
 import * as e from '../../src/datos/esquema'
+import type * as ModuloCliente from '../../src/datos/cliente'
 import { conContextoRLS as conContextoRLSReal, type DB } from '../../src/datos/cliente'
 
 const MIGRATIONS_DIR = join(__dirname, '../../src/datos/migraciones')
@@ -19,7 +21,7 @@ let _dbApp: DB | undefined = undefined
 let actorActual: Actor = { id: '', rol: 'superadmin' }
 
 vi.mock('../../src/datos/cliente', async (importOriginal) => {
-  const original = await importOriginal<typeof import('../../src/datos/cliente')>()
+  const original = await importOriginal<typeof ModuloCliente>()
   return {
     ...original,
     db: {} as DB,
@@ -31,7 +33,11 @@ vi.mock('../../src/datos/cliente', async (importOriginal) => {
       original.conContextoRLS(
         _dbApp!,
         ctx,
-        fn as (tx: Parameters<typeof original.conContextoRLS>[2] extends (tx: infer TX) => unknown ? TX : never) => Promise<T>
+        fn as (
+          tx: Parameters<typeof original.conContextoRLS>[2] extends (tx: infer TX) => unknown
+            ? TX
+            : never
+        ) => Promise<T>
       ),
   }
 })
@@ -77,6 +83,7 @@ beforeAll(async () => {
   await _sqlRoot`GRANT CREATE ON DATABASE test TO agora_migraciones`
   await _sqlRoot`GRANT USAGE, CREATE ON SCHEMA public TO agora_migraciones`
   await _sqlRoot`GRANT USAGE ON SCHEMA public TO agora_app`
+  await prepararRolConsultaRls(_sqlRoot)
   await _sqlRoot`
     ALTER DEFAULT PRIVILEGES FOR ROLE agora_migraciones IN SCHEMA public
       GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO agora_app;
@@ -86,7 +93,10 @@ beforeAll(async () => {
       GRANT USAGE, SELECT ON SEQUENCES TO agora_app;
   `
 
-  const urlMigraciones = urlRoot.replace(/postgres:\/\/[^@]+@/, 'postgres://agora_migraciones:test@')
+  const urlMigraciones = urlRoot.replace(
+    /postgres:\/\/[^@]+@/,
+    'postgres://agora_migraciones:test@'
+  )
   const sqlMigraciones = postgres(urlMigraciones)
   const dbMig = drizzle(sqlMigraciones)
   await migrate(dbMig, { migrationsFolder: MIGRATIONS_DIR })
@@ -108,11 +118,41 @@ afterAll(async () => {
 async function sembrar() {
   const dbRoot = drizzle(_sqlRoot, { schema: e })
 
-  const pSuper = await ins(dbRoot.insert(e.persona).values({ tipoDocumento: 'CC', numeroDocumento: '90000001', primerNombre: 'Super', primerApellido: 'CMS' }).returning())
-  const uSuper = await ins(dbRoot.insert(e.usuario).values({ personaId: pSuper.id, correo: 'super@cms-test.com', rol: 'superadmin' }).returning())
+  const pSuper = await ins(
+    dbRoot
+      .insert(e.persona)
+      .values({
+        tipoDocumento: 'CC',
+        numeroDocumento: '90000001',
+        primerNombre: 'Super',
+        primerApellido: 'CMS',
+      })
+      .returning()
+  )
+  const uSuper = await ins(
+    dbRoot
+      .insert(e.usuario)
+      .values({ personaId: pSuper.id, correo: 'super@cms-test.com', rol: 'superadmin' })
+      .returning()
+  )
 
-  const pDocente = await ins(dbRoot.insert(e.persona).values({ tipoDocumento: 'CC', numeroDocumento: '90000002', primerNombre: 'Docente', primerApellido: 'CMS' }).returning())
-  const uDocente = await ins(dbRoot.insert(e.usuario).values({ personaId: pDocente.id, correo: 'docente@cms-test.com', rol: 'docente' }).returning())
+  const pDocente = await ins(
+    dbRoot
+      .insert(e.persona)
+      .values({
+        tipoDocumento: 'CC',
+        numeroDocumento: '90000002',
+        primerNombre: 'Docente',
+        primerApellido: 'CMS',
+      })
+      .returning()
+  )
+  const uDocente = await ins(
+    dbRoot
+      .insert(e.usuario)
+      .values({ personaId: pDocente.id, correo: 'docente@cms-test.com', rol: 'docente' })
+      .returning()
+  )
 
   const archivoFoto = await ins(
     dbRoot
@@ -137,12 +177,18 @@ describe('CMS — Server Actions reales → conContextoRLS → BD', () => {
     actorActual = { id: ids.superadminId, rol: 'superadmin' }
     const { crearEntradaCMS } = await import('../../src/acciones/cms/entrada')
 
-    const creada = await crearEntradaCMS({ tipo: 'noticia', slug: 'noticia-cms-test', titulo: 'Noticia de prueba' })
+    const creada = await crearEntradaCMS({
+      tipo: 'noticia',
+      slug: 'noticia-cms-test',
+      titulo: 'Noticia de prueba',
+    })
     expect(creada?.serverError, creada?.serverError).toBeUndefined()
     expect(creada?.data?.estado).toBe('borrador')
 
-    const visiblesAnonimo = await conContextoRLSReal(_dbApp!, { usuarioId: '', rol: 'anonimo' }, async (tx) =>
-      tx.select().from(e.cmsEntrada)
+    const visiblesAnonimo = await conContextoRLSReal(
+      _dbApp!,
+      { usuarioId: '', rol: 'anonimo' },
+      async (tx) => tx.select().from(e.cmsEntrada)
     )
     expect(visiblesAnonimo).toHaveLength(0)
   })
@@ -151,7 +197,11 @@ describe('CMS — Server Actions reales → conContextoRLS → BD', () => {
     actorActual = { id: ids.docenteId, rol: 'docente' }
     const { crearEntradaCMS } = await import('../../src/acciones/cms/entrada')
 
-    const resultado = await crearEntradaCMS({ tipo: 'noticia', slug: 'intento-docente', titulo: 'Intento no autorizado' })
+    const resultado = await crearEntradaCMS({
+      tipo: 'noticia',
+      slug: 'intento-docente',
+      titulo: 'Intento no autorizado',
+    })
     expect(resultado?.serverError).toBeDefined()
   })
 
@@ -159,15 +209,21 @@ describe('CMS — Server Actions reales → conContextoRLS → BD', () => {
     actorActual = { id: ids.superadminId, rol: 'superadmin' }
     const { crearEntradaCMS, publicarEntradaCMS } = await import('../../src/acciones/cms/entrada')
 
-    const creada = await crearEntradaCMS({ tipo: 'album', slug: 'album-cms-test', titulo: 'Álbum de prueba' })
+    const creada = await crearEntradaCMS({
+      tipo: 'album',
+      slug: 'album-cms-test',
+      titulo: 'Álbum de prueba',
+    })
     expect(creada?.serverError, creada?.serverError).toBeUndefined()
 
     const publicada = await publicarEntradaCMS({ id: creada!.data!.id, publicado: true })
     expect(publicada?.serverError, publicada?.serverError).toBeUndefined()
     expect(publicada?.data?.estado).toBe('publicado')
 
-    const visiblesAnonimo = await conContextoRLSReal(_dbApp!, { usuarioId: '', rol: 'anonimo' }, async (tx) =>
-      tx.select().from(e.cmsEntrada)
+    const visiblesAnonimo = await conContextoRLSReal(
+      _dbApp!,
+      { usuarioId: '', rol: 'anonimo' },
+      async (tx) => tx.select().from(e.cmsEntrada)
     )
     const slugs = visiblesAnonimo.map((v) => v.slug)
     expect(slugs).toContain('album-cms-test')
@@ -177,40 +233,60 @@ describe('CMS — Server Actions reales → conContextoRLS → BD', () => {
   it('agregarFotoAlbum enlaza una foto y el público puede ver el archivo vía archivo_cms_publica', async () => {
     actorActual = { id: ids.superadminId, rol: 'superadmin' }
     const { crearEntradaCMS, publicarEntradaCMS } = await import('../../src/acciones/cms/entrada')
-    const { agregarFotoAlbum, eliminarFotoAlbum } = await import('../../src/acciones/cms/album-foto')
+    const { agregarFotoAlbum, eliminarFotoAlbum } =
+      await import('../../src/acciones/cms/album-foto')
 
-    const album = await crearEntradaCMS({ tipo: 'album', slug: 'album-con-fotos', titulo: 'Álbum con fotos' })
+    const album = await crearEntradaCMS({
+      tipo: 'album',
+      slug: 'album-con-fotos',
+      titulo: 'Álbum con fotos',
+    })
     await publicarEntradaCMS({ id: album!.data!.id, publicado: true })
 
-    const foto = await agregarFotoAlbum({ albumId: album!.data!.id, archivoId: ids.archivoFotoId, alt: 'Foto de prueba' })
+    const foto = await agregarFotoAlbum({
+      albumId: album!.data!.id,
+      archivoId: ids.archivoFotoId,
+      alt: 'Foto de prueba',
+    })
     expect(foto?.serverError, foto?.serverError).toBeUndefined()
 
-    const archivoVisible = await conContextoRLSReal(_dbApp!, { usuarioId: '', rol: 'anonimo' }, async (tx) =>
-      tx.select().from(e.archivo).where(eq(e.archivo.id, ids.archivoFotoId))
+    const archivoVisible = await conContextoRLSReal(
+      _dbApp!,
+      { usuarioId: '', rol: 'anonimo' },
+      async (tx) => tx.select().from(e.archivo).where(eq(e.archivo.id, ids.archivoFotoId))
     )
     expect(archivoVisible).toHaveLength(1)
 
     const eliminada = await eliminarFotoAlbum({ id: foto!.data!.id })
     expect(eliminada?.serverError, eliminada?.serverError).toBeUndefined()
 
-    const archivoTrasEliminar = await conContextoRLSReal(_dbApp!, { usuarioId: '', rol: 'anonimo' }, async (tx) =>
-      tx.select().from(e.archivo).where(eq(e.archivo.id, ids.archivoFotoId))
+    const archivoTrasEliminar = await conContextoRLSReal(
+      _dbApp!,
+      { usuarioId: '', rol: 'anonimo' },
+      async (tx) => tx.select().from(e.archivo).where(eq(e.archivo.id, ids.archivoFotoId))
     )
     expect(archivoTrasEliminar).toHaveLength(0)
   })
 
   it('eliminarEntradaCMS (baja lógica) la retira de lo que ve el público', async () => {
     actorActual = { id: ids.superadminId, rol: 'superadmin' }
-    const { crearEntradaCMS, publicarEntradaCMS, eliminarEntradaCMS } = await import('../../src/acciones/cms/entrada')
+    const { crearEntradaCMS, publicarEntradaCMS, eliminarEntradaCMS } =
+      await import('../../src/acciones/cms/entrada')
 
-    const creada = await crearEntradaCMS({ tipo: 'pagina', slug: 'pagina-a-eliminar', titulo: 'Página temporal' })
+    const creada = await crearEntradaCMS({
+      tipo: 'pagina',
+      slug: 'pagina-a-eliminar',
+      titulo: 'Página temporal',
+    })
     await publicarEntradaCMS({ id: creada!.data!.id, publicado: true })
 
     const eliminada = await eliminarEntradaCMS({ id: creada!.data!.id })
     expect(eliminada?.serverError, eliminada?.serverError).toBeUndefined()
 
-    const visiblesAnonimo = await conContextoRLSReal(_dbApp!, { usuarioId: '', rol: 'anonimo' }, async (tx) =>
-      tx.select().from(e.cmsEntrada)
+    const visiblesAnonimo = await conContextoRLSReal(
+      _dbApp!,
+      { usuarioId: '', rol: 'anonimo' },
+      async (tx) => tx.select().from(e.cmsEntrada)
     )
     expect(visiblesAnonimo.map((v) => v.slug)).not.toContain('pagina-a-eliminar')
   })

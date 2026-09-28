@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { db, conContextoRLS } from '@/src/datos/cliente'
 import { obtenerUsuarioActual } from '@/src/auth/sesion'
+import { env } from '@/src/env'
 import {
   anioLectivo,
   usuario,
@@ -25,7 +26,11 @@ export default async function ProfesoresAdmin() {
     db,
     { usuarioId: usuarioActual.id, rol: 'superadmin' },
     async (tx) => {
-      const [activo] = await tx.select().from(anioLectivo).where(eq(anioLectivo.activo, true)).limit(1)
+      const [activo] = await tx
+        .select()
+        .from(anioLectivo)
+        .where(eq(anioLectivo.activo, true))
+        .limit(1)
 
       const docentesFilas = await tx
         .select({ usuario, persona })
@@ -37,7 +42,9 @@ export default async function ProfesoresAdmin() {
       const asignaturasVigentes = (await tx.select().from(asignatura)).filter((a) => !a.eliminadoEn)
 
       const cursosAnio = activo
-        ? (await tx.select().from(curso).where(eq(curso.anioLectivoId, activo.id))).filter((c) => !c.eliminadoEn)
+        ? (await tx.select().from(curso).where(eq(curso.anioLectivoId, activo.id))).filter(
+            (c) => !c.eliminadoEn
+          )
         : []
 
       const asignaciones = activo
@@ -63,37 +70,52 @@ export default async function ProfesoresAdmin() {
   return (
     <div className="flex flex-col gap-10">
       <div>
-        <h1 className="font-display text-2xl">Profesores</h1>
-        <p className="text-sm text-panel-secundario">
+        <h1 className="font-titulo text-titulo font-medium">Profesores</h1>
+        <p className="text-nota text-texto-secundario">
           Año lectivo activo: {datos.anioActivo ? datos.anioActivo.nombre : 'ninguno configurado'}
         </p>
       </div>
 
       <section className={tarjeta}>
         <h2 className={tituloTarjeta}>Registrar docente</h2>
-        <FormularioNuevoDocente />
+        <FormularioNuevoDocente conKeycloak={env.AUTH_KEYCLOAK_HABILITADO} />
       </section>
 
       <section className={tarjeta}>
         <h2 className={tituloTarjeta}>Docentes ({datos.docentesFilas.length})</h2>
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr className={encabezadoTabla}>
-              <th className="py-2">Nombre</th>
-              <th className="py-2">Correo</th>
-              <th className="py-2">Estado</th>
-              <th className="py-2"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {datos.docentesFilas.map(({ usuario: u, persona: p }) => (
-              <FilaDocente key={u.id} docente={u} nombreCompleto={`${p.primerNombre} ${p.primerApellido}`} />
-            ))}
-            {datos.docentesFilas.length === 0 && (
-              <tr><td colSpan={4} className="py-3 text-panel-secundario">Sin docentes registrados aún</td></tr>
-            )}
-          </tbody>
-        </table>
+        <div
+          role="region"
+          aria-label="Tabla con desplazamiento horizontal"
+          tabIndex={0}
+          className="-mx-1 overflow-x-auto px-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foco"
+        >
+          <table className="w-full border-collapse text-nota">
+            <thead>
+              <tr className={encabezadoTabla}>
+                <th className="py-2">Nombre</th>
+                <th className="py-2">Correo</th>
+                <th className="py-2">Estado</th>
+                <th className="py-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {datos.docentesFilas.map(({ usuario: u, persona: p }) => (
+                <FilaDocente
+                  key={u.id}
+                  docente={u}
+                  nombreCompleto={`${p.primerNombre} ${p.primerApellido}`}
+                />
+              ))}
+              {datos.docentesFilas.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="py-3 text-texto-secundario">
+                    Sin docentes registrados aún
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <section className={tarjeta}>
@@ -108,30 +130,41 @@ export default async function ProfesoresAdmin() {
 
       <section className={tarjeta}>
         <h2 className={tituloTarjeta}>Asignaciones vigentes ({datos.asignaciones.length})</h2>
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr className={encabezadoTabla}>
-              <th className="py-2">Docente</th>
-              <th className="py-2">Materia</th>
-              <th className="py-2">Curso</th>
-              <th className="py-2"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {datos.asignaciones.map((fila) => (
-              <FilaAsignacion
-                key={fila.asignacionDocente.id}
-                id={fila.asignacionDocente.id}
-                docenteNombre={`${fila.docentePersona.primerNombre} ${fila.docentePersona.primerApellido}`}
-                asignaturaNombre={fila.asignatura.nombre}
-                cursoNombre={fila.curso.nombre}
-              />
-            ))}
-            {datos.asignaciones.length === 0 && (
-              <tr><td colSpan={4} className="py-3 text-panel-secundario">Sin asignaciones en el año activo</td></tr>
-            )}
-          </tbody>
-        </table>
+        <div
+          role="region"
+          aria-label="Tabla con desplazamiento horizontal"
+          tabIndex={0}
+          className="-mx-1 overflow-x-auto px-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foco"
+        >
+          <table className="w-full border-collapse text-nota">
+            <thead>
+              <tr className={encabezadoTabla}>
+                <th className="py-2">Docente</th>
+                <th className="py-2">Materia</th>
+                <th className="py-2">Curso</th>
+                <th className="py-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {datos.asignaciones.map((fila) => (
+                <FilaAsignacion
+                  key={fila.asignacionDocente.id}
+                  id={fila.asignacionDocente.id}
+                  docenteNombre={`${fila.docentePersona.primerNombre} ${fila.docentePersona.primerApellido}`}
+                  asignaturaNombre={fila.asignatura.nombre}
+                  cursoNombre={fila.curso.nombre}
+                />
+              ))}
+              {datos.asignaciones.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="py-3 text-texto-secundario">
+                    Sin asignaciones en el año activo
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
     </div>
   )

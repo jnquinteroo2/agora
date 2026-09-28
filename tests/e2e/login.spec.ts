@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { exigirStackLocal } from './stack-local'
+import { keycloakHabilitado } from './keycloak-apoyo'
 
 exigirStackLocal()
 
@@ -13,6 +14,10 @@ test('el superadministrador inicia sesión por la interfaz, llega al panel y cie
   test.skip(
     !correo || !contrasena,
     'Faltan SUPERADMIN_EMAIL o SUPERADMIN_CONTRASENA_INICIAL en .env'
+  )
+  test.skip(
+    keycloakHabilitado,
+    'Con Keycloak activo el formulario local no se muestra; el ingreso lo cubre keycloak-cuentas.spec.ts'
   )
 
   const violaciones: string[] = []

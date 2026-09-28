@@ -21,14 +21,22 @@ export default async function BoletinesAdmin() {
     db,
     { usuarioId: usuarioActual.id, rol: 'superadmin' },
     async (tx) => {
-      const [activo] = await tx.select().from(anioLectivo).where(eq(anioLectivo.activo, true)).limit(1)
+      const [activo] = await tx
+        .select()
+        .from(anioLectivo)
+        .where(eq(anioLectivo.activo, true))
+        .limit(1)
       if (!activo) return { activo: null, cursos: [], periodos: [], matriculas: [], documentos: [] }
 
-      const cursos = (await tx.select().from(curso).where(eq(curso.anioLectivoId, activo.id))).filter(
-        (c) => !c.eliminadoEn
-      )
+      const cursos = (
+        await tx.select().from(curso).where(eq(curso.anioLectivoId, activo.id))
+      ).filter((c) => !c.eliminadoEn)
 
-      const periodos = await tx.select().from(periodo).where(eq(periodo.anioLectivoId, activo.id)).orderBy(periodo.numero)
+      const periodos = await tx
+        .select()
+        .from(periodo)
+        .where(eq(periodo.anioLectivoId, activo.id))
+        .orderBy(periodo.numero)
 
       const matriculasFilas = await tx
         .select({ matricula, persona, curso })
@@ -54,7 +62,7 @@ export default async function BoletinesAdmin() {
 
   const opcionesMatricula = datos.matriculas.map((f) => ({
     id: f.matricula.id,
-    nombre: `${f.persona.primerNombre} ${f.persona.primerApellido} — ${f.curso.nombre}`,
+    nombre: `${f.persona.primerNombre} ${f.persona.primerApellido} (${f.curso.nombre})`,
   }))
   const opcionesCurso = datos.cursos.map((c) => ({ id: c.id, nombre: c.nombre }))
   const opcionesPeriodo = datos.periodos.map((p) => ({ id: p.id, nombre: `Periodo ${p.numero}` }))
@@ -62,14 +70,14 @@ export default async function BoletinesAdmin() {
   return (
     <div className="flex flex-col gap-10">
       <div>
-        <h1 className="font-display text-2xl">Boletines</h1>
-        <p className="text-sm text-panel-secundario">
+        <h1 className="font-titulo text-titulo font-medium">Boletines</h1>
+        <p className="text-nota text-texto-secundario">
           Año lectivo activo: {datos.activo ? datos.activo.nombre : 'ninguno configurado'}
         </p>
       </div>
 
       {!datos.activo && (
-        <p className="text-sm text-panel-secundario">
+        <p className="text-nota text-texto-secundario">
           Active un año lectivo en Materias para poder generar boletines.
         </p>
       )}
@@ -78,45 +86,71 @@ export default async function BoletinesAdmin() {
         <>
           <section className={tarjeta}>
             <h2 className={tituloTarjeta}>Generar boletín individual</h2>
-            <FormularioBoletinIndividual matriculas={opcionesMatricula} periodos={opcionesPeriodo} />
+            <FormularioBoletinIndividual
+              matriculas={opcionesMatricula}
+              periodos={opcionesPeriodo}
+            />
           </section>
 
           <section className={tarjeta}>
             <h2 className={tituloTarjeta}>Generar boletines de todo un curso</h2>
-            <p className="mb-2 text-xs text-panel-secundario">
-              Encola un boletín por cada estudiante activo del curso en el periodo elegido. La generación toma unos
-              segundos por estudiante; los archivos aparecen abajo a medida que el worker los procesa.
+            <p className="mb-2 text-menudo text-texto-secundario">
+              Encola un boletín por cada estudiante activo del curso en el periodo elegido. La
+              generación toma unos segundos por estudiante; los archivos aparecen abajo a medida que
+              el worker los procesa.
             </p>
             <FormularioBoletinMasivo cursos={opcionesCurso} periodos={opcionesPeriodo} />
           </section>
 
           <section className={tarjeta}>
-            <h2 className={tituloTarjeta}>Boletines generados recientemente ({datos.documentos.length})</h2>
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className={encabezadoTabla}>
-                  <th className="py-2">Estudiante</th>
-                  <th className="py-2">Fecha</th>
-                  <th className="py-2"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {datos.documentos.map((d) => (
-                  <tr key={d.documentoGenerado.id} className="border-b border-panel-borde/50">
-                    <td className="py-2 pr-3">{d.persona.primerNombre} {d.persona.primerApellido}</td>
-                    <td className="py-2 pr-3">{d.documentoGenerado.creadoEn.toISOString().slice(0, 10)}</td>
-                    <td className="py-2">
-                      <a href={`/api/documentos/${d.archivo.id}`} target="_blank" rel="noreferrer" className="text-carmin hover:underline">
-                        Ver PDF
-                      </a>
-                    </td>
+            <h2 className={tituloTarjeta}>
+              Boletines generados recientemente ({datos.documentos.length})
+            </h2>
+            <div
+              role="region"
+              aria-label="Tabla con desplazamiento horizontal"
+              tabIndex={0}
+              className="-mx-1 overflow-x-auto px-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foco"
+            >
+              <table className="w-full border-collapse text-nota">
+                <thead>
+                  <tr className={encabezadoTabla}>
+                    <th className="py-2">Estudiante</th>
+                    <th className="py-2">Fecha</th>
+                    <th className="py-2"></th>
                   </tr>
-                ))}
-                {datos.documentos.length === 0 && (
-                  <tr><td colSpan={3} className="py-3 text-panel-secundario">Sin boletines generados aún</td></tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {datos.documentos.map((d) => (
+                    <tr key={d.documentoGenerado.id} className="border-b border-borde">
+                      <td className="py-2 pr-3">
+                        {d.persona.primerNombre} {d.persona.primerApellido}
+                      </td>
+                      <td className="py-2 pr-3">
+                        {d.documentoGenerado.creadoEn.toISOString().slice(0, 10)}
+                      </td>
+                      <td className="py-2">
+                        <a
+                          href={`/api/documentos/${d.archivo.id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-acento-texto hover:underline"
+                        >
+                          Ver PDF
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
+                  {datos.documentos.length === 0 && (
+                    <tr>
+                      <td colSpan={3} className="py-3 text-texto-secundario">
+                        Sin boletines generados aún
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </section>
         </>
       )}

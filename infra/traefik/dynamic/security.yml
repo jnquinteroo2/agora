@@ -20,18 +20,9 @@ http:
         average: 100
         burst: 200
         period: 1m
-        sourceCriterion:
-          ipStrategy:
-            depth: 1
 
     rate-limit-login:
       rateLimit:
         average: 5
         burst: 10
         period: 15m
-        sourceCriterion:
-          ipStrategy:
-            depth: 1
-
-  routers: {}
-  services: {}

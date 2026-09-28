@@ -1,4 +1,6 @@
-export type Rol = 'superadmin' | 'docente' | 'estudiante'
+import type { Rol } from './roles'
+
+export type { Rol }
 export type Accion = 'leer' | 'crear' | 'editar' | 'eliminar'
 export type Recurso =
   | 'calificaciones'
@@ -35,6 +37,12 @@ const PERMISOS: Record<Rol, Matriz> = {
     finanzas: ['leer'],
     expediente: ['leer'],
   },
+  admin: {
+    usuarios: ['leer', 'crear', 'editar'],
+  },
+  secretaria: {},
+  contador: {},
+  acudiente: {},
 }
 
 export function puede(rol: Rol, accion: Accion, recurso: Recurso): boolean {

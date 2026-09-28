@@ -20,13 +20,13 @@ export const metadata = metadatosDePagina({
 })
 
 const CONTRASTES = [
-  { par: 'Texto principal sobre el fondo', valor: '17,9:1' },
-  { par: 'Texto secundario sobre el fondo', valor: '5,2:1' },
-  { par: 'Texto secundario sobre los campos del formulario', valor: '5,7:1' },
-  { par: 'Texto del botón principal sobre su color', valor: '5,7:1' },
-  { par: 'Mensajes de error sobre los campos del formulario', valor: '7,0:1' },
-  { par: 'Texto claro sobre el pie de página', valor: '15,0:1' },
-  { par: 'Rótulos del pie de página', valor: '6,8:1' },
+  { par: 'Texto principal sobre el fondo', claro: '21:1', oscuro: '21:1' },
+  { par: 'Texto secundario sobre el fondo', claro: '7,0:1', oscuro: '8,6:1' },
+  { par: 'Texto del botón principal sobre su color', claro: '6,9:1', oscuro: '6,9:1' },
+  { par: 'Enlaces e íconos en carmín sobre el fondo', claro: '6,9:1', oscuro: '5,6:1' },
+  { par: 'Mensajes de error sobre el fondo', claro: '6,5:1', oscuro: '6,7:1' },
+  { par: 'Borde de los campos del formulario sobre el fondo', claro: '4,5:1', oscuro: '6,0:1' },
+  { par: 'Anillo de foco sobre el fondo', claro: '6,9:1', oscuro: '5,6:1' },
 ]
 
 export default async function AccesibilidadPage() {
@@ -40,9 +40,9 @@ export default async function AccesibilidadPage() {
       contenido: (
         <Parrafo>
           Las páginas públicas de este sitio buscan cumplir el nivel AA de las Pautas de
-          Accesibilidad para el Contenido Web (WCAG) 2.1, para que cualquier persona pueda leerlas,
-          recorrerlas y enviar el formulario de admisión, también con teclado o con lector de
-          pantalla.
+          Accesibilidad para el Contenido Web (WCAG) 2.2, en modo claro y en modo oscuro, para que
+          cualquier persona pueda leerlas, recorrerlas y enviar el formulario de admisión, también
+          con teclado o con lector de pantalla.
         </Parrafo>
       ),
     },
@@ -57,9 +57,10 @@ export default async function AccesibilidadPage() {
           </Parrafo>
           <Lista>
             <li>
-              Revisión automática con axe-core 4.13 contra los criterios A y AA de WCAG 2.0 y 2.1,
-              sin errores. En el formulario de admisión se revisaron sus tres estados: vacío, con
-              errores y enviado.
+              Revisión automática con axe-core 4.13 contra los criterios A y AA de WCAG 2.0, 2.1 y
+              2.2, en modo claro y en modo oscuro, sin ninguna falla. La misma revisión se hizo en la
+              página de ingreso a la plataforma y en la pantalla de ingreso seguro, también con un
+              error de credenciales a la vista.
             </li>
             <li>
               Recorrido completo con teclado del formulario de admisión, en el mismo orden en que se
@@ -78,13 +79,18 @@ export default async function AccesibilidadPage() {
             </li>
           </Lista>
           <Parrafo>
-            El contraste de los colores de texto se midió con la fórmula de WCAG 2.1. El mínimo para
-            el nivel AA es 4,5:1 en texto normal:
+            El contraste de los colores se midió con la fórmula de WCAG 2.2 en los dos modos. El
+            mínimo para el nivel AA es 4,5:1 en texto normal y 3:1 en bordes de campos, íconos y
+            anillo de foco. Las cifras están truncadas a un decimal, nunca redondeadas hacia arriba:
           </Parrafo>
           <ListaDeDatos
             datos={CONTRASTES.map((c) => ({
               termino: c.par,
-              valor: <span className="font-mono font-tnum text-[0.85em]">{c.valor}</span>,
+              valor: (
+                <span className="font-mono font-tnum text-[0.85em]">
+                  claro {c.claro} · oscuro {c.oscuro}
+                </span>
+              ),
             }))}
           />
         </>
@@ -103,11 +109,6 @@ export default async function AccesibilidadPage() {
           <li>
             Los documentos en PDF que genera la plataforma, como boletines, certificados y recibos,
             no se han evaluado para accesibilidad.
-          </li>
-          <li>
-            La página de ingreso a la plataforma (/login) no cumple el criterio 1.4.3 de WCAG 2.1
-            (contraste mínimo): las etiquetas de sus campos tienen un contraste medido de 1,03:1,
-            cuando el mínimo es 4,5:1.
           </li>
           <li>
             La plataforma de gestión escolar, a la que se entra con usuario y contraseña, no está

@@ -1,4 +1,4 @@
-"use server"
+'use server'
 
 import { z } from 'zod'
 import { eq } from 'drizzle-orm'
@@ -18,8 +18,11 @@ export const crearConceptoIngreso = accionSuperadmin
       const [nuevo] = await tx.insert(conceptoIngreso).values(parsedInput).returning()
       if (!nuevo) throw new Error('No se pudo crear el concepto de ingreso')
       await registrarAuditoria(tx, {
-        actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-        accion: 'crear', entidad: 'concepto_ingreso', entidadId: nuevo.id,
+        actorId: ctx.usuario.id,
+        actorRol: ctx.usuario.rol,
+        accion: 'crear',
+        entidad: 'concepto_ingreso',
+        entidadId: nuevo.id,
       })
       return nuevo
     })
@@ -38,8 +41,11 @@ export const eliminarConceptoIngreso = accionSuperadmin
         .returning()
       if (!eliminado) throw new Error('El concepto indicado no existe')
       await registrarAuditoria(tx, {
-        actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-        accion: 'eliminar', entidad: 'concepto_ingreso', entidadId: eliminado.id,
+        actorId: ctx.usuario.id,
+        actorRol: ctx.usuario.rol,
+        accion: 'eliminar',
+        entidad: 'concepto_ingreso',
+        entidadId: eliminado.id,
       })
       return eliminado
     })
@@ -56,8 +62,11 @@ export const crearCategoriaEgreso = accionSuperadmin
       const [nueva] = await tx.insert(categoriaEgreso).values(parsedInput).returning()
       if (!nueva) throw new Error('No se pudo crear la categoría de egreso')
       await registrarAuditoria(tx, {
-        actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-        accion: 'crear', entidad: 'categoria_egreso', entidadId: nueva.id,
+        actorId: ctx.usuario.id,
+        actorRol: ctx.usuario.rol,
+        accion: 'crear',
+        entidad: 'categoria_egreso',
+        entidadId: nueva.id,
       })
       return nueva
     })
@@ -76,8 +85,11 @@ export const eliminarCategoriaEgreso = accionSuperadmin
         .returning()
       if (!eliminada) throw new Error('La categoría indicada no existe')
       await registrarAuditoria(tx, {
-        actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-        accion: 'eliminar', entidad: 'categoria_egreso', entidadId: eliminada.id,
+        actorId: ctx.usuario.id,
+        actorRol: ctx.usuario.rol,
+        accion: 'eliminar',
+        entidad: 'categoria_egreso',
+        entidadId: eliminada.id,
       })
       return eliminada
     })

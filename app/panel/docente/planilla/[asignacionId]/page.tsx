@@ -100,7 +100,11 @@ export default async function PlanillaAsignacion({
   )
 
   if (!asignacion) {
-    return <p className="text-panel-secundario">No se encontró esa asignación o usted no tiene acceso a ella.</p>
+    return (
+      <p className="text-texto-secundario">
+        No se encontró esa asignación o usted no tiene acceso a ella.
+      </p>
+    )
   }
 
   const periodoActual = asignacion.periodoSeleccionado
@@ -108,23 +112,23 @@ export default async function PlanillaAsignacion({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/panel/docente" className="text-sm text-panel-secundario hover:text-panel-texto">
+        <Link href="/panel/docente" className="text-nota text-texto-secundario hover:text-texto">
           ← Mis asignaturas
         </Link>
-        <h1 className="mt-2 font-display text-2xl">
+        <h1 className="mt-2 font-titulo text-titulo font-medium">
           {asignacion.asignatura.nombre} · {asignacion.curso.nombre}
         </h1>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {periodos.map((p) => (
           <Link
             key={p.id}
             href={`/panel/docente/planilla/${asignacionId}?periodo=${p.id}`}
-            className={`rounded-sm border px-3 py-1 text-sm ${
+            className={`rounded-control border px-3 py-1 text-nota ${
               periodoActual?.id === p.id
-                ? 'border-carmin bg-carmin text-hueso'
-                : 'border-panel-borde text-panel-secundario hover:text-panel-texto'
+                ? 'border-acento-texto bg-acento text-sobre-acento'
+                : 'border-borde text-texto-secundario hover:text-texto'
             }`}
           >
             Periodo {p.numero}
@@ -134,7 +138,9 @@ export default async function PlanillaAsignacion({
       </div>
 
       {!periodoActual ? (
-        <p className="text-panel-secundario">Este año lectivo todavía no tiene periodos configurados.</p>
+        <p className="text-texto-secundario">
+          Este año lectivo todavía no tiene periodos configurados.
+        </p>
       ) : (
         <TablaPlanilla
           asignaturaId={asignacion.asignacion.asignaturaId}

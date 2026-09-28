@@ -16,7 +16,10 @@ export async function contraseñaComprometida(password: string): Promise<boolean
     }).finally(() => clearTimeout(timeout))
 
     if (!respuesta.ok) {
-      logger.warn({ status: respuesta.status }, 'HIBP respondió con error, se permite la contraseña (fail-open)')
+      logger.warn(
+        { status: respuesta.status },
+        'HIBP respondió con error, se permite la contraseña (fail-open)'
+      )
       return false
     }
 

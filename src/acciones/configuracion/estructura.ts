@@ -1,4 +1,4 @@
-"use server"
+'use server'
 
 import { z } from 'zod'
 import { eq } from 'drizzle-orm'
@@ -31,8 +31,11 @@ export const crearJornada = accionSuperadmin
       async (tx) => {
         const [nueva] = await tx.insert(jornada).values(parsedInput).returning()
         await registrarAuditoria(tx, {
-          actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-          accion: 'crear', entidad: 'jornada', entidadId: nueva!.id,
+          actorId: ctx.usuario.id,
+          actorRol: ctx.usuario.rol,
+          accion: 'crear',
+          entidad: 'jornada',
+          entidadId: nueva!.id,
         })
         return nueva!
       }
@@ -54,8 +57,11 @@ export const crearCiclo = accionSuperadmin
       async (tx) => {
         const [nuevo] = await tx.insert(ciclo).values(parsedInput).returning()
         await registrarAuditoria(tx, {
-          actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-          accion: 'crear', entidad: 'ciclo', entidadId: nuevo!.id,
+          actorId: ctx.usuario.id,
+          actorRol: ctx.usuario.rol,
+          accion: 'crear',
+          entidad: 'ciclo',
+          entidadId: nuevo!.id,
         })
         return nuevo!
       }
@@ -75,8 +81,11 @@ export const crearArea = accionSuperadmin
       async (tx) => {
         const [nueva] = await tx.insert(area).values(parsedInput).returning()
         await registrarAuditoria(tx, {
-          actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-          accion: 'crear', entidad: 'area', entidadId: nueva!.id,
+          actorId: ctx.usuario.id,
+          actorRol: ctx.usuario.rol,
+          accion: 'crear',
+          entidad: 'area',
+          entidadId: nueva!.id,
         })
         return nueva!
       }
@@ -97,8 +106,11 @@ export const crearAsignatura = accionSuperadmin
       async (tx) => {
         const [nueva] = await tx.insert(asignatura).values(parsedInput).returning()
         await registrarAuditoria(tx, {
-          actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-          accion: 'crear', entidad: 'asignatura', entidadId: nueva!.id,
+          actorId: ctx.usuario.id,
+          actorRol: ctx.usuario.rol,
+          accion: 'crear',
+          entidad: 'asignatura',
+          entidadId: nueva!.id,
         })
         return nueva!
       }
@@ -122,8 +134,11 @@ export const crearPeriodo = accionSuperadmin
       async (tx) => {
         const [nuevo] = await tx.insert(periodo).values(parsedInput).returning()
         await registrarAuditoria(tx, {
-          actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-          accion: 'crear', entidad: 'periodo', entidadId: nuevo!.id,
+          actorId: ctx.usuario.id,
+          actorRol: ctx.usuario.rol,
+          accion: 'crear',
+          entidad: 'periodo',
+          entidadId: nuevo!.id,
         })
         return nuevo!
       }
@@ -152,9 +167,11 @@ export const abrirCerrarPeriodo = accionSuperadmin
           .where(eq(periodo.id, parsedInput.periodoId))
           .returning()
         await registrarAuditoria(tx, {
-          actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
+          actorId: ctx.usuario.id,
+          actorRol: ctx.usuario.rol,
           accion: parsedInput.abrir ? 'abrir_periodo' : 'cerrar_periodo',
-          entidad: 'periodo', entidadId: parsedInput.periodoId,
+          entidad: 'periodo',
+          entidadId: parsedInput.periodoId,
         })
         return actualizado!
       }
@@ -177,8 +194,11 @@ export const crearCurso = accionSuperadmin
       async (tx) => {
         const [nuevo] = await tx.insert(curso).values(parsedInput).returning()
         await registrarAuditoria(tx, {
-          actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-          accion: 'crear', entidad: 'curso', entidadId: nuevo!.id,
+          actorId: ctx.usuario.id,
+          actorRol: ctx.usuario.rol,
+          accion: 'crear',
+          entidad: 'curso',
+          entidadId: nuevo!.id,
         })
         return nuevo!
       }
@@ -203,7 +223,11 @@ export const agregarAsignaturaPlan = accionSuperadmin
           .insert(planAsignatura)
           .values(parsedInput)
           .onConflictDoUpdate({
-            target: [planAsignatura.anioLectivoId, planAsignatura.cicloId, planAsignatura.asignaturaId],
+            target: [
+              planAsignatura.anioLectivoId,
+              planAsignatura.cicloId,
+              planAsignatura.asignaturaId,
+            ],
             set: { horasSemana: parsedInput.horasSemana },
           })
           .returning()
@@ -211,7 +235,6 @@ export const agregarAsignaturaPlan = accionSuperadmin
       }
     )
   })
-
 
 const esqEliminarAsignatura = z.object({ id: z.string().uuid() })
 
@@ -229,8 +252,11 @@ export const eliminarAsignatura = accionSuperadmin
           .returning()
         if (!eliminada) throw new Error('La asignatura indicada no existe')
         await registrarAuditoria(tx, {
-          actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-          accion: 'eliminar', entidad: 'asignatura', entidadId: eliminada.id,
+          actorId: ctx.usuario.id,
+          actorRol: ctx.usuario.rol,
+          accion: 'eliminar',
+          entidad: 'asignatura',
+          entidadId: eliminada.id,
         })
         return eliminada
       }
@@ -253,8 +279,11 @@ export const eliminarCurso = accionSuperadmin
           .returning()
         if (!eliminado) throw new Error('El curso indicado no existe')
         await registrarAuditoria(tx, {
-          actorId: ctx.usuario.id, actorRol: ctx.usuario.rol,
-          accion: 'eliminar', entidad: 'curso', entidadId: eliminado.id,
+          actorId: ctx.usuario.id,
+          actorRol: ctx.usuario.rol,
+          accion: 'eliminar',
+          entidad: 'curso',
+          entidadId: eliminado.id,
         })
         return eliminado
       }

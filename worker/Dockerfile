@@ -10,14 +10,15 @@ ENV NODE_ENV=production
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
 RUN groupadd --system --gid 10001 agora \
- && useradd --system --uid 10001 --gid agora --no-create-home --shell /usr/sbin/nologin agora
+ && useradd --system --uid 10001 --gid agora --no-create-home --shell /usr/sbin/nologin agora \
+ && mkdir -p /var/agora/storage && chown agora:agora /var/agora/storage
 
 COPY --from=deps --chown=agora:agora /app/node_modules ./node_modules
 COPY --chown=agora:agora . .
 
 USER agora
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD node -e "require('./worker/health.js')" || exit 1
+HEALTHCHECK --interval=30s --timeout=15s --start-period=60s --retries=2 \
+  CMD ["node", "worker/health.js"]
 
 CMD ["node", "--import", "tsx/esm", "worker/main.ts"]

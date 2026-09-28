@@ -37,17 +37,22 @@ export default async function AliadosPage() {
       <Seccion aire="md" filete="arriba">
         <Contenedor ancho="amplio">
           {aliados.length > 0 ? (
-            <ul className="grid gap-px bg-niebla sm:grid-cols-2 lg:grid-cols-3">
+            <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {aliados.map((aliado) => (
-                <li key={aliado.id} className="flex flex-col gap-2 bg-hueso pt-6 pr-6 pb-8">
-                  <h2 className="font-display text-rubro font-medium text-tinta">
-                    {aliado.titulo}
-                  </h2>
+                <li
+                  key={aliado.id}
+                  className="flex flex-col gap-2 rounded-tarjeta border border-borde p-6 shadow-sutil"
+                >
+                  <h2 className="font-titulo text-rubro font-medium text-texto">{aliado.titulo}</h2>
                   {aliado.subtitulo ? (
-                    <p className="versalitas text-menudo text-piedra">{aliado.subtitulo}</p>
+                    <p className="text-nota font-medium text-texto-secundario">
+                      {aliado.subtitulo}
+                    </p>
                   ) : null}
                   {aliado.cuerpo ? (
-                    <p className="prosa text-nota leading-relaxed text-piedra">{aliado.cuerpo}</p>
+                    <p className="prosa text-nota leading-relaxed text-texto-secundario">
+                      {aliado.cuerpo}
+                    </p>
                   ) : null}
                 </li>
               ))}

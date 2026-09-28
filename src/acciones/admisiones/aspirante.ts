@@ -10,28 +10,7 @@ import { validarTokenFormulario } from '../../datos/formulario-token'
 import { POLITICA_DATOS } from '../../legal/versiones'
 import { aspirante, anioLectivo, matricula } from '../../datos/esquema'
 import { accion, accionSuperadmin } from '../middleware'
-
-const esqFormularioAspirante = z.object({
-  primerNombre: z.string().min(1).max(60),
-  segundoNombre: z.string().max(60).optional(),
-  primerApellido: z.string().min(1).max(60),
-  segundoApellido: z.string().max(60).optional(),
-  tipoDocumento: z.enum(['TI', 'RC', 'CE', 'PA', 'NIP']),
-  numeroDocumento: z.string().min(4).max(20),
-  fechaNacimiento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  lugarNacimiento: z.string().max(100).optional(),
-  genero: z.enum(['M', 'F', 'NB', 'NR']).optional(),
-  cicloId: z.string().uuid(),
-  jornadaId: z.string().uuid(),
-  telefonoAcudiente: z.string().max(20),
-  nombreAcudiente: z.string().min(2).max(120),
-  correoAcudiente: z.string().email().optional(),
-  autorizacionDatos: z.literal(true, {
-    error: 'Debe autorizar el tratamiento de datos',
-  }),
-  sitio: z.string().optional().default(''),
-  formularioServido: z.string().min(1),
-})
+import { esqFormularioAspirante } from './esquema-aspirante'
 
 export const registrarAspirante = accion
   .schema(esqFormularioAspirante)

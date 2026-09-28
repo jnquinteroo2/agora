@@ -3,28 +3,33 @@ import type { Route } from 'next'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from './cn'
 
-const boton = cva(
-  'transicion-ui inline-flex items-center justify-center gap-2 rounded-sm text-nota font-medium whitespace-nowrap active:scale-[0.98] disabled:pointer-events-none disabled:opacity-45',
+export const estiloBoton = cva(
+  'presionable inline-flex items-center justify-center gap-2 rounded-control font-medium whitespace-nowrap select-none disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&_svg]:size-[1.125em] [&_svg]:shrink-0',
   {
     variants: {
       tono: {
-        primario: 'bg-carmin text-hueso hover:bg-carmin-hondo',
-        secundario: 'border border-tinta bg-transparent text-tinta hover:bg-tinta hover:text-hueso',
-        fantasma: 'bg-transparent text-piedra hover:text-tinta',
+        primario: 'bg-acento text-sobre-acento shadow-sutil hover:bg-acento-hover',
+        secundario:
+          'border border-borde-fuerte bg-transparent text-texto hover:bg-texto hover:text-superficie',
+        fantasma:
+          'border border-transparent bg-transparent text-texto-secundario hover:border-borde hover:text-texto',
         claro:
-          'border border-hueso/35 bg-transparent text-hueso hover:border-hueso hover:bg-hueso hover:text-tinta',
+          'border border-superficie/40 bg-transparent text-superficie hover:border-superficie hover:bg-superficie hover:text-texto',
+        peligro:
+          'border border-error/60 bg-transparent text-error hover:bg-error hover:text-superficie',
       },
       talla: {
-        sm: 'h-9 px-3',
-        md: 'h-11 px-5',
-        lg: 'h-12 px-7 text-cuerpo',
+        sm: 'h-9 px-3 text-nota',
+        md: 'h-11 px-5 text-nota',
+        lg: 'h-12 px-6 text-cuerpo',
+        icono: 'size-11 p-0',
       },
     },
     defaultVariants: { tono: 'primario', talla: 'md' },
   }
 )
 
-type VariantesBoton = VariantProps<typeof boton>
+export type VariantesBoton = VariantProps<typeof estiloBoton>
 
 export function Boton({
   tono,
@@ -33,7 +38,7 @@ export function Boton({
   type = 'button',
   ...resto
 }: React.ComponentPropsWithoutRef<'button'> & VariantesBoton) {
-  return <button type={type} className={cn(boton({ tono, talla }), className)} {...resto} />
+  return <button type={type} className={cn(estiloBoton({ tono, talla }), className)} {...resto} />
 }
 
 export function EnlaceBoton({
@@ -43,7 +48,9 @@ export function EnlaceBoton({
   className,
   ...resto
 }: Omit<React.ComponentPropsWithoutRef<typeof Link>, 'href'> & VariantesBoton & { href: string }) {
-  return <Link href={href as Route} className={cn(boton({ tono, talla }), className)} {...resto} />
+  return (
+    <Link href={href as Route} className={cn(estiloBoton({ tono, talla }), className)} {...resto} />
+  )
 }
 
 export function EnlaceSubrayado({
@@ -55,7 +62,7 @@ export function EnlaceSubrayado({
     <Link
       href={href as Route}
       className={cn(
-        'transicion-ui underline decoration-niebla decoration-1 underline-offset-4 hover:decoration-carmin',
+        'transicion-ui rounded-[2px] font-medium text-texto underline decoration-borde-control decoration-1 underline-offset-[5px] hover:text-acento-texto hover:decoration-acento-texto',
         className
       )}
       {...resto}

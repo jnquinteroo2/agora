@@ -10,23 +10,31 @@ export default async function EditarEntradaPage({ params }: { params: Promise<{ 
   const usuario = await obtenerUsuarioActual()
   if (!usuario) return null
 
-  const { entrada, fotos } = await conContextoRLS(db, { usuarioId: usuario.id, rol: 'superadmin' }, async (tx) => {
-    const [e] = await tx.select().from(cmsEntrada).where(eq(cmsEntrada.id, id)).limit(1)
-    if (!e) return { entrada: null, fotos: [] }
+  const { entrada, fotos } = await conContextoRLS(
+    db,
+    { usuarioId: usuario.id, rol: 'superadmin' },
+    async (tx) => {
+      const [e] = await tx.select().from(cmsEntrada).where(eq(cmsEntrada.id, id)).limit(1)
+      if (!e) return { entrada: null, fotos: [] }
 
-    const fotos =
-      e.tipo === 'album'
-        ? await tx.select().from(cmsAlbumFoto).where(eq(cmsAlbumFoto.albumId, e.id)).orderBy(asc(cmsAlbumFoto.orden))
-        : []
+      const fotos =
+        e.tipo === 'album'
+          ? await tx
+              .select()
+              .from(cmsAlbumFoto)
+              .where(eq(cmsAlbumFoto.albumId, e.id))
+              .orderBy(asc(cmsAlbumFoto.orden))
+          : []
 
-    return { entrada: e, fotos }
-  })
+      return { entrada: e, fotos }
+    }
+  )
 
   if (!entrada) notFound()
 
   return (
     <div className="flex flex-col gap-8">
-      <h1 className="font-display text-2xl">Editar: {entrada.titulo}</h1>
+      <h1 className="font-titulo text-titulo font-medium">Editar: {entrada.titulo}</h1>
       <EditorEntrada entrada={entrada} fotos={fotos} />
     </div>
   )

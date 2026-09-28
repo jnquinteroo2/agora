@@ -1,4 +1,4 @@
-"use server"
+'use server'
 
 import { z } from 'zod'
 import { eq } from 'drizzle-orm'
@@ -6,7 +6,13 @@ import { db, conContextoRLS, registrarAuditoria } from '../../datos/cliente'
 import { observadorRegistro, matricula } from '../../datos/esquema'
 import { accionDocente } from '../middleware'
 
-const TIPOS_OBSERVADOR = ['academica', 'convivencial', 'felicitacion', 'compromiso', 'decision_final'] as const
+const TIPOS_OBSERVADOR = [
+  'academica',
+  'convivencial',
+  'felicitacion',
+  'compromiso',
+  'decision_final',
+] as const
 
 const esqRegistrar = z.object({
   matriculaId: z.string().uuid(),
@@ -26,7 +32,11 @@ export const registrarObservacion = accionDocente
         anioLectivoId: parsedInput.anioLectivoId,
       },
       async (tx) => {
-        const [m] = await tx.select().from(matricula).where(eq(matricula.id, parsedInput.matriculaId)).limit(1)
+        const [m] = await tx
+          .select()
+          .from(matricula)
+          .where(eq(matricula.id, parsedInput.matriculaId))
+          .limit(1)
         if (!m) {
           throw new Error('La matrícula indicada no existe o usted no tiene acceso a ella')
         }
@@ -79,8 +89,10 @@ export const marcarFirmaObservador = accionDocente
       },
       async (tx) => {
         const cambios: Partial<typeof observadorRegistro.$inferInsert> = {}
-        if (parsedInput.firmadoEstudiante !== undefined) cambios.firmadoEstudiante = parsedInput.firmadoEstudiante
-        if (parsedInput.firmadoAcudiente !== undefined) cambios.firmadoAcudiente = parsedInput.firmadoAcudiente
+        if (parsedInput.firmadoEstudiante !== undefined)
+          cambios.firmadoEstudiante = parsedInput.firmadoEstudiante
+        if (parsedInput.firmadoAcudiente !== undefined)
+          cambios.firmadoAcudiente = parsedInput.firmadoAcudiente
 
         const [actualizada] = await tx
           .update(observadorRegistro)

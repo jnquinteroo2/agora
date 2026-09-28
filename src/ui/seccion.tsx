@@ -10,23 +10,39 @@ const seccion = cva('', {
       ninguno: '',
     },
     filete: {
-      arriba: 'border-t border-niebla',
+      arriba: 'border-t border-borde',
       ninguno: '',
     },
+    fondo: {
+      base: '',
+      elevado: 'bg-superficie-elevada',
+    },
   },
-  defaultVariants: { aire: 'md', filete: 'ninguno' },
+  defaultVariants: { aire: 'md', filete: 'ninguno', fondo: 'base' },
 })
 
 type PropiedadesSeccion = React.ComponentPropsWithoutRef<'section'> & VariantProps<typeof seccion>
 
-export function Seccion({ aire, filete, className, ...resto }: PropiedadesSeccion) {
-  return <section className={cn(seccion({ aire, filete }), className)} {...resto} />
+export function Seccion({ aire, filete, fondo, className, ...resto }: PropiedadesSeccion) {
+  return <section className={cn(seccion({ aire, filete, fondo }), className)} {...resto} />
 }
 
 export function TituloDeSeccion({ className, ...resto }: React.ComponentPropsWithoutRef<'h2'>) {
   return (
     <h2
-      className={cn('equilibrado font-display text-titulo font-medium text-tinta', className)}
+      className={cn('equilibrado font-titulo text-titulo font-medium text-texto', className)}
+      {...resto}
+    />
+  )
+}
+
+export function EntradaDeSeccion({ className, ...resto }: React.ComponentPropsWithoutRef<'p'>) {
+  return (
+    <p
+      className={cn(
+        'prosa max-w-medida text-cuerpo leading-relaxed text-texto-secundario',
+        className
+      )}
       {...resto}
     />
   )
@@ -56,14 +72,14 @@ export function EncabezadoDePagina({
         id={idTitulo}
         ref={refTitulo}
         tabIndex={refTitulo ? -1 : undefined}
-        className="equilibrado font-display text-portada font-medium text-tinta focus-visible:outline-none"
+        className="equilibrado max-w-[22ch] font-titulo text-portada font-medium text-texto focus-visible:outline-none"
       >
         {titulo}
       </h1>
       {entrada ? (
-        <p className="prosa max-w-medida text-guia leading-relaxed text-piedra">{entrada}</p>
+        <p className="prosa max-w-medida text-guia text-texto-secundario">{entrada}</p>
       ) : null}
-      {acciones ? <div className="flex flex-wrap items-center gap-4 pt-1">{acciones}</div> : null}
+      {acciones ? <div className="flex flex-wrap items-center gap-3 pt-1">{acciones}</div> : null}
     </header>
   )
 }

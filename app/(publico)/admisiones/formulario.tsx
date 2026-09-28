@@ -4,9 +4,20 @@ import { useEffect, useRef, useState } from 'react'
 import { useAction } from 'next-safe-action/hooks'
 import { registrarAspirante } from '@/src/acciones/admisiones/aspirante'
 import { cn } from '@/src/ui/cn'
+import {
+  esMenorDeEdad,
+  requiereAcudiente,
+  requiereTelefonoDelAspirante,
+} from '@/src/dominio/admision'
 import { Boton, EnlaceBoton, EnlaceSubrayado } from '@/src/ui/boton'
 import { Contenedor } from '@/src/ui/contenedor'
 import { Seccion, EncabezadoDePagina } from '@/src/ui/seccion'
+import { estiloControl, MensajeDeError } from '@/src/ui/campo'
+import {
+  CODIGOS_TIPO_DOCUMENTO,
+  etiquetaTipoDocumento,
+  type TipoDocumento,
+} from '@/src/dominio/documentos'
 import {
   ORDEN_CAMPOS,
   erroresDelServidor,
@@ -39,14 +50,15 @@ const ETIQUETAS: Record<CampoFormulario, string> = {
   genero: 'Género',
   cicloId: 'Ciclo al que aspira',
   jornadaId: 'Jornada',
+  telefonoAspirante: 'Teléfono del aspirante',
+  correoAspirante: 'Correo del aspirante',
   nombreAcudiente: 'Nombre del acudiente',
   telefonoAcudiente: 'Teléfono del acudiente',
   correoAcudiente: 'Correo del acudiente',
   autorizacionDatos: 'Autorización de tratamiento de datos',
 }
 
-const campoBase =
-  'transicion-ui h-11 w-full rounded-sm border bg-papel px-3 text-cuerpo text-tinta placeholder:text-piedra'
+const campoBase = cn(estiloControl, 'h-11')
 
 function idCampo(campo: CampoFormulario) {
   return `campo-${campo}`
@@ -59,11 +71,7 @@ function idError(campo: CampoFormulario) {
 function MensajeError({ campo, errores }: { campo: CampoFormulario; errores: ErroresFormulario }) {
   const mensaje = errores[campo]
   if (!mensaje) return null
-  return (
-    <p id={idError(campo)} className="text-nota text-error">
-      {mensaje}
-    </p>
-  )
+  return <MensajeDeError id={idError(campo)}>{mensaje}</MensajeDeError>
 }
 
 function Campo({
@@ -95,12 +103,12 @@ function Campo({
 
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
-      <label htmlFor={idCampo(campo)} className="text-nota font-medium text-tinta">
+      <label htmlFor={idCampo(campo)} className="text-nota font-medium text-texto">
         {ETIQUETAS[campo]}
-        {opcional ? <span className="font-normal text-piedra"> (opcional)</span> : null}
+        {opcional ? <span className="font-normal text-texto-secundario"> (opcional)</span> : null}
       </label>
       {ayuda ? (
-        <p id={idAyuda} className="text-menudo text-piedra">
+        <p id={idAyuda} className="text-menudo text-texto-secundario">
           {ayuda}
         </p>
       ) : null}
@@ -110,7 +118,7 @@ function Campo({
         'aria-invalid': invalido || undefined,
         'aria-describedby': describe,
         'aria-required': opcional ? undefined : true,
-        className: cn(campoBase, invalido ? 'border-error' : 'border-piedra/50 hover:border-tinta'),
+        className: campoBase,
       })}
       <MensajeError campo={campo} errores={errores} />
     </div>
@@ -127,11 +135,11 @@ function Bloque({
   children: React.ReactNode
 }) {
   return (
-    <fieldset className="grid gap-x-10 gap-y-6 border-t border-tinta pt-6 md:grid-cols-12">
+    <fieldset className="grid gap-x-10 gap-y-6 border-t border-texto pt-6 md:grid-cols-12">
       <legend className="float-left w-full md:col-span-4 md:w-auto">
-        <span className="block font-display text-rubro font-medium text-tinta">{titulo}</span>
+        <span className="block font-titulo text-rubro font-medium text-texto">{titulo}</span>
         {descripcion ? (
-          <span className="prosa mt-2 block max-w-[34ch] text-nota leading-relaxed text-piedra">
+          <span className="prosa mt-2 block max-w-[34ch] text-nota leading-relaxed text-texto-secundario">
             {descripcion}
           </span>
         ) : null}
@@ -139,6 +147,10 @@ function Bloque({
       <div className="grid gap-x-6 gap-y-6 sm:grid-cols-2 md:col-span-8">{children}</div>
     </fieldset>
   )
+}
+
+function articuloDe(nombre: string): string {
+  return /^(Institución|Corporación|Fundación|Asociación)\b/.test(nombre) ? 'la ' : ''
 }
 
 function leer(form: FormData, campo: string): string {
@@ -165,6 +177,10 @@ export function FormularioAdmision({
   canalDerechos: string | null
 }) {
   const [errores, setErrores] = useState<ErroresFormulario>({})
+  const [fechaNacimiento, setFechaNacimiento] = useState('')
+  const menor = esMenorDeEdad(fechaNacimiento)
+  const acudienteObligatorio = requiereAcudiente(fechaNacimiento)
+  const telefonoAspiranteObligatorio = requiereTelefonoDelAspirante(fechaNacimiento)
   const [intento, setIntento] = useState(0)
   const resumen = useRef<HTMLDivElement>(null)
   const exito = useRef<HTMLHeadingElement>(null)
@@ -204,20 +220,20 @@ export function FormularioAdmision({
         </Seccion>
         <Seccion aire="md" filete="arriba" className="pt-aire-sm">
           <Contenedor ancho="amplio">
-            <div className="flex flex-col gap-6 border-t border-tinta pt-8">
+            <div className="flex flex-col gap-6 border-t border-texto pt-8">
               <div className="flex flex-col gap-2">
-                <p className="versalitas text-menudo text-piedra">Número de radicado</p>
+                <p className="text-nota font-medium text-texto-secundario">Número de radicado</p>
                 <p
                   id="radicado"
-                  className="font-mono font-tnum text-[clamp(2rem,1.2rem+4vw,3.25rem)] leading-none font-medium tracking-tight break-all text-tinta"
+                  className="font-mono font-tnum text-[clamp(2rem,1.2rem+4vw,3.25rem)] leading-none font-medium tracking-tight break-all text-texto"
                 >
                   {radicado}
                 </p>
               </div>
-              <p className="prosa max-w-medida leading-relaxed text-piedra">
+              <p className="prosa max-w-medida leading-relaxed text-texto-secundario">
                 Anote este número o tome una captura de pantalla: con él la institución identifica
                 la solicitud. El siguiente paso lo da la institución, que se comunica con el
-                acudiente registrado para continuar el proceso.
+                aspirante o, si es menor de edad, con su acudiente para continuar el proceso.
               </p>
               <div className="flex flex-wrap gap-4 pt-2">
                 <EnlaceBoton href="/inicio" tono="secundario">
@@ -255,6 +271,7 @@ export function FormularioAdmision({
               if (!(objetivo instanceof HTMLInputElement || objetivo instanceof HTMLSelectElement))
                 return
               const nombre = objetivo.name as CampoFormulario
+              if (nombre === 'fechaNacimiento') setFechaNacimiento(objetivo.value)
               if (errores[nombre]) {
                 setErrores((previos) => {
                   const siguientes = { ...previos }
@@ -278,6 +295,8 @@ export function FormularioAdmision({
                 genero: leer(form, 'genero'),
                 cicloId: leer(form, 'cicloId'),
                 jornadaId: leer(form, 'jornadaId'),
+                telefonoAspirante: leer(form, 'telefonoAspirante'),
+                correoAspirante: leer(form, 'correoAspirante'),
                 nombreAcudiente: leer(form, 'nombreAcudiente'),
                 telefonoAcudiente: leer(form, 'telefonoAcudiente'),
                 correoAcudiente: leer(form, 'correoAcudiente'),
@@ -296,15 +315,17 @@ export function FormularioAdmision({
                 segundoNombre: datos.segundoNombre || undefined,
                 primerApellido: datos.primerApellido,
                 segundoApellido: datos.segundoApellido || undefined,
-                tipoDocumento: datos.tipoDocumento as 'TI' | 'RC' | 'CE' | 'PA' | 'NIP',
+                tipoDocumento: datos.tipoDocumento as TipoDocumento,
                 numeroDocumento: datos.numeroDocumento,
                 fechaNacimiento: datos.fechaNacimiento,
                 lugarNacimiento: datos.lugarNacimiento || undefined,
                 genero: (datos.genero as 'M' | 'F' | 'NB' | 'NR') || undefined,
                 cicloId: datos.cicloId,
                 jornadaId: datos.jornadaId,
-                telefonoAcudiente: datos.telefonoAcudiente,
-                nombreAcudiente: datos.nombreAcudiente,
+                telefonoAspirante: datos.telefonoAspirante || undefined,
+                correoAspirante: datos.correoAspirante || undefined,
+                telefonoAcudiente: datos.telefonoAcudiente || undefined,
+                nombreAcudiente: datos.nombreAcudiente || undefined,
                 correoAcudiente: datos.correoAcudiente || undefined,
                 autorizacionDatos: true,
                 sitio: String(form.get('sitio') ?? ''),
@@ -318,7 +339,7 @@ export function FormularioAdmision({
               <input type="text" id="sitio" name="sitio" tabIndex={-1} autoComplete="off" />
             </div>
 
-            <p id="nota-obligatorios" className="text-nota text-piedra">
+            <p id="nota-obligatorios" className="text-nota text-texto-secundario">
               Todos los campos son obligatorios, salvo los marcados como opcionales.
             </p>
 
@@ -328,9 +349,9 @@ export function FormularioAdmision({
                 role="alert"
                 tabIndex={-1}
                 aria-labelledby="titulo-resumen"
-                className="flex flex-col gap-3 border-l-2 border-error bg-papel py-5 pr-6 pl-5 focus-visible:outline-offset-4"
+                className="flex flex-col gap-3 rounded-tarjeta border border-error/60 p-5 focus-visible:outline-offset-4"
               >
-                <h2 id="titulo-resumen" className="font-display text-rubro font-medium text-tinta">
+                <h2 id="titulo-resumen" className="font-titulo text-rubro font-medium text-texto">
                   {listaErrores.length === 1
                     ? 'Hay un dato por corregir'
                     : `Hay ${listaErrores.length} datos por corregir`}
@@ -340,7 +361,7 @@ export function FormularioAdmision({
                     <li key={campo}>
                       <a
                         href={`#${idCampo(campo)}`}
-                        className="text-nota text-tinta underline decoration-error underline-offset-4"
+                        className="text-nota text-texto underline decoration-error underline-offset-4"
                       >
                         {errores[campo]}
                       </a>
@@ -372,11 +393,11 @@ export function FormularioAdmision({
                     <option value="" disabled>
                       Seleccione
                     </option>
-                    <option value="TI">Tarjeta de identidad</option>
-                    <option value="RC">Registro civil</option>
-                    <option value="CE">Cédula de extranjería</option>
-                    <option value="PA">Pasaporte</option>
-                    <option value="NIP">Número de identificación personal</option>
+                    {CODIGOS_TIPO_DOCUMENTO.map((codigo) => (
+                      <option key={codigo} value={codigo}>
+                        {etiquetaTipoDocumento(codigo)}
+                      </option>
+                    ))}
                   </select>
                 )}
               </Campo>
@@ -399,20 +420,18 @@ export function FormularioAdmision({
                     autoComplete="bday"
                     className={cn(
                       p.className,
-                      'focus:outline-2 focus:outline-offset-2 focus:outline-carmin'
+                      'focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-foco'
                     )}
                   />
                 )}
               </Campo>
-              <Campo campo="lugarNacimiento" errores={errores} opcional>
-                {(p) => (
-                  <input
-                    {...p}
-                    type="text"
-                    autoComplete="off"
-                    placeholder="Municipio y departamento"
-                  />
-                )}
+              <Campo
+                campo="lugarNacimiento"
+                errores={errores}
+                opcional
+                ayuda="Municipio y departamento."
+              >
+                {(p) => <input {...p} type="text" autoComplete="off" />}
               </Campo>
               <Campo campo="genero" errores={errores} opcional>
                 {(p) => (
@@ -453,7 +472,7 @@ export function FormularioAdmision({
                 aria-invalid={errores.jornadaId ? true : undefined}
                 className="flex flex-col gap-3 sm:col-span-2"
               >
-                <legend className="pb-1.5 text-nota font-medium text-tinta">
+                <legend className="pb-1.5 text-nota font-medium text-texto">
                   {ETIQUETAS.jornadaId}
                 </legend>
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -461,8 +480,10 @@ export function FormularioAdmision({
                     <label
                       key={j.id}
                       className={cn(
-                        'transicion-ui flex cursor-pointer items-start gap-3 rounded-sm border bg-papel p-4 has-[:checked]:border-tinta has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-carmin',
-                        errores.jornadaId ? 'border-error' : 'border-piedra/50 hover:border-tinta'
+                        'transicion-ui flex cursor-pointer items-start gap-3 rounded-tarjeta border bg-superficie-elevada p-4 shadow-sutil has-[:checked]:border-borde-fuerte has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-foco',
+                        errores.jornadaId
+                          ? 'border-error'
+                          : 'border-borde-control hover:border-texto'
                       )}
                     >
                       <input
@@ -471,14 +492,14 @@ export function FormularioAdmision({
                         name="jornadaId"
                         value={j.id}
                         defaultChecked={jornadas.length === 1}
-                        className="mt-1 size-4 shrink-0 accent-tinta focus-visible:outline-none"
+                        className="mt-1 size-4 shrink-0 accent-texto focus-visible:outline-none"
                       />
                       <span className="flex flex-col gap-1">
-                        <span className="font-display text-rubro leading-tight text-tinta">
+                        <span className="font-titulo text-rubro leading-tight text-texto">
                           {j.nombre}
                         </span>
                         {j.detalle ? (
-                          <span className="text-nota text-piedra">{j.detalle}</span>
+                          <span className="text-nota text-texto-secundario">{j.detalle}</span>
                         ) : null}
                       </span>
                     </label>
@@ -489,13 +510,60 @@ export function FormularioAdmision({
             </Bloque>
 
             <Bloque
-              titulo="Acudiente"
-              descripcion="La persona con la que la institución se comunica para continuar el proceso."
+              titulo="Contacto del aspirante"
+              descripcion={
+                telefonoAspiranteObligatorio
+                  ? 'El aspirante es mayor de edad: la institución usa este teléfono para comunicarse con el aspirante.'
+                  : 'Si el aspirante tiene teléfono o correo propios, puede registrarlos.'
+              }
             >
-              <Campo campo="nombreAcudiente" errores={errores} className="sm:col-span-2">
+              <Campo
+                campo="telefonoAspirante"
+                errores={errores}
+                opcional={!telefonoAspiranteObligatorio}
+              >
+                {(p) => (
+                  <input
+                    {...p}
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    className={cn(p.className, 'font-mono font-tnum')}
+                  />
+                )}
+              </Campo>
+              <Campo campo="correoAspirante" errores={errores} opcional>
+                {(p) => (
+                  <input
+                    {...p}
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    spellCheck={false}
+                  />
+                )}
+              </Campo>
+            </Bloque>
+
+            <Bloque
+              titulo="Acudiente"
+              descripcion={
+                menor === true
+                  ? 'El aspirante es menor de 18 años: el acudiente es obligatorio y la institución se comunica con esa persona.'
+                  : menor === false
+                    ? 'El aspirante es mayor de edad: registrar un acudiente es opcional.'
+                    : 'Obligatorio si el aspirante es menor de 18 años. Se define con la fecha de nacimiento.'
+              }
+            >
+              <Campo
+                campo="nombreAcudiente"
+                errores={errores}
+                opcional={!acudienteObligatorio}
+                className="sm:col-span-2"
+              >
                 {(p) => <input {...p} type="text" autoComplete="off" />}
               </Campo>
-              <Campo campo="telefonoAcudiente" errores={errores}>
+              <Campo campo="telefonoAcudiente" errores={errores} opcional={!acudienteObligatorio}>
                 {(p) => (
                   <input
                     {...p}
@@ -519,7 +587,7 @@ export function FormularioAdmision({
               </Campo>
             </Bloque>
 
-            <div className="flex flex-col gap-6 border-t border-tinta pt-6">
+            <div className="flex flex-col gap-6 border-t border-texto pt-6">
               <div className="flex flex-col gap-2">
                 <div className="flex items-start gap-3">
                   <input
@@ -534,19 +602,21 @@ export function FormularioAdmision({
                         : 'aviso-privacidad'
                     }
                     aria-required="true"
-                    className="mt-1 size-4 shrink-0 accent-tinta"
+                    className="mt-1 size-4 shrink-0 accent-texto"
                   />
                   <label
                     htmlFor={idCampo('autorizacionDatos')}
-                    className="prosa max-w-medida text-nota leading-relaxed text-tinta"
+                    className="prosa max-w-medida text-nota leading-relaxed text-texto"
                   >
-                    Autorizo a {responsable} a tratar los datos de este formulario para estudiar la
-                    solicitud de admisión y comunicarse con el acudiente.
+                    Autorizo a {articuloDe(responsable)}
+                    {responsable} a tratar los datos de este formulario para estudiar la solicitud
+                    de admisión y comunicarse con el aspirante o, si es menor de edad, con su
+                    acudiente.
                   </label>
                 </div>
                 <p
                   id="aviso-privacidad"
-                  className="prosa max-w-medida pl-7 text-menudo leading-relaxed text-piedra"
+                  className="prosa max-w-medida pl-7 text-menudo leading-relaxed text-texto-secundario"
                 >
                   Si el aspirante es menor de edad, autoriza su representante legal después de
                   escuchar su opinión, y responder las preguntas sobre sus datos es facultativo. Se
@@ -554,7 +624,7 @@ export function FormularioAdmision({
                   autorización{canalDerechos ? ` ${canalDerechos}` : ''}. Más información en la{' '}
                   <EnlaceSubrayado
                     href="/privacidad"
-                    className="decoration-piedra hover:decoration-tinta"
+                    className="decoration-texto-secundario hover:decoration-texto"
                   >
                     política de tratamiento de datos personales
                   </EnlaceSubrayado>
@@ -564,11 +634,11 @@ export function FormularioAdmision({
               </div>
 
               {errorServidor ? (
-                <div role="alert" className="border-l-2 border-error bg-papel py-4 pr-6 pl-5">
-                  <p className="text-nota font-medium text-tinta">
+                <div role="alert" className="rounded-tarjeta border border-error/60 p-5">
+                  <p className="text-nota font-medium text-texto">
                     No se pudo enviar la solicitud.
                   </p>
-                  <p className="text-nota text-piedra">{errorServidor}</p>
+                  <p className="text-nota text-texto-secundario">{errorServidor}</p>
                 </div>
               ) : null}
 
