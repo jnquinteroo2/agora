@@ -10,6 +10,9 @@ const CONTEXTO_SIEMBRA = {
   rol: 'superadmin' as const,
 }
 
+/* -------------------------------------------------------------------------- */
+/* -------------------------- helpers de nombres/emails --------------------- */
+/* -------------------------------------------------------------------------- */
 function limpiaryNormalizar(s: string) {
   return s
     .normalize('NFD')
@@ -64,6 +67,9 @@ function generarEmail(primerNombre: string, primerApellido: string, dominio = 'd
   return `${user}@${dominio}`
 }
 
+/* -------------------------------------------------------------------------- */
+/* -------------------------- funciones CRUD idempotentes ------------------- */
+/* -------------------------------------------------------------------------- */
 async function getOrCreatePersonaTx(tx: any, fullName: string, emailCandidate?: string) {
   const parsed = parseNombreCompleto(fullName)
   const correo = emailCandidate ?? generarEmail(parsed.primerNombre, parsed.primerApellido, process.env.SEMILLA_PERFILES_DOMINIO ?? 'demo.local')
@@ -172,9 +178,12 @@ async function getOrCreateEstudianteFamiliarTx(tx: any, estudianteId: string, fa
   return insertado?.id
 }
 
+/* -------------------------------------------------------------------------- */
+/* ------------------------------ datos de la lista ------------------------- */
+/* -------------------------------------------------------------------------- */
 /**
  * Lista de filas [ESTUDIANTE, ACUDIENTE, PROFESOR?]
- * Rellena o ajusta si necesitas cambios.
+ * Edita esta lista si requieres asignar jornadas/cursos manuales.
  */
 const LISTA_ALUMNOS: Array<[string, string, string | null]> = [
   // Diurna
@@ -228,59 +237,211 @@ const LISTA_ALUMNOS: Array<[string, string, string | null]> = [
   ['TOSCANO TOCANCIPÁ JULIÁN LEONARDO', 'DIANA MARCELA TOCANCIPA', null],
 ]
 
-async function sembrarListaAlumnos() {
-  const habilitado = process.env['AGORA_SIEMBRA_LISTA'] === 'true'
-  if (!habilitado) {
-    logger.info('Siembra de lista de alumnos deshabilitada (AGORA_SIEMBRA_LISTA != true)')
-    return
+/* -------------------------------------------------------------------------- */
+/* ----------------------- creación de cursos / matrículas ------------------ */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Detecta índice de corte entre diurna y sábados.
+ * Preferible: establecer AGORA_SEED_SPLIT_INDEX env var para control manual.
+ */
+function detectarSplitIndex(): number {
+  const envIndex = process.env['AGORA_SEED_SPLIT_INDEX']
+  if (envIndex) {
+    const n = Number(envIndex)
+    if (!Number.isNaN(n) && n >= 0 && n <= LISTA_ALUMNOS.length) return n
+  }
+  // Buscamos marcador conocido (primer alumno de sábados)
+  const marker = 'GÓMEZ ROZO AMY GABRIELA'
+  const idx = LISTA_ALUMNOS.findIndex((r) => r[0] === marker)
+  if (idx >= 0) return idx
+  // Fallback: buscar comentario manual no posible en runtime -> usar longitud - 19 (heurística)
+  const fallback = Math.max(0, LISTA_ALUMNOS.length - 19)
+  return fallback
+}
+
+/**
+ * Crea cursos (por ciclo x jornada) y plan de asignaturas básicas.
+ * Devuelve map cursoIds (clave: `${cicloCodigo}_${jornadaCodigo}`).
+ */
+async function crearCursosYPlanes(tx: any, anioId: string, cicloIds: Record<string, string>, jornadaIds: Record<string, string>, asignaturaIds: Record<string, string>) {
+  const cursoIds: Record<string, string> = {}
+
+  // Crear cursos por combinación de ciclo x jornada
+  for (const cicloCodigo of Object.keys(cicloIds)) {
+    for (const jornadaCodigo of Object.keys(jornadaIds)) {
+      const nombre = `${cicloCodigo}-${jornadaCodigo}`
+      const [r] = await tx
+        .insert(e.curso)
+        .values({
+          anioLectivoId: anioId,
+          cicloId: cicloIds[cicloCodigo],
+          jornadaId: jornadaIds[jornadaCodigo],
+          nombre,
+        })
+        .onConflictDoNothing()
+        .returning({ id: e.curso.id })
+
+      const id =
+        r?.id ??
+        (await tx
+          .select({ id: e.curso.id })
+          .from(e.curso)
+          .where(eq(e.curso.nombre, nombre))
+          .then((x) => x[0]?.id))
+
+      if (id) cursoIds[`${cicloCodigo}_${jornadaCodigo}`] = id
+    }
   }
 
-  const dominio = process.env['SEMILLA_PERFILES_DOMINIO'] ?? 'demo.local'
-  logger.info('Iniciando siembra de lista de alumnos (esto puede tardar)...')
+  // Crear planAsignatura simple: asignar cada asignatura a cada ciclo (si no existe)
+  for (const cicloCodigo of Object.keys(cicloIds)) {
+    for (const [nombreAsig, asigId] of Object.entries(asignaturaIds)) {
+      // horas por defecto 2
+      await tx
+        .insert(e.planAsignatura)
+        .values({
+          anioLectivoId: anioId,
+          cicloId: cicloIds[cicloCodigo],
+          asignaturaId: asigId,
+          horasSemana: 2,
+        })
+        .onConflictDoNothing()
+    }
+  }
 
-  await conContextoRLS(db, CONTEXTO_SIEMBRA, async (tx) => {
-    for (const [alumnoNombre, acudienteNombre, profesorNombre] of LISTA_ALUMNOS) {
-      try {
-        const alumnoParsed = parseNombreCompleto(alumnoNombre)
-        const alumnoEmail = generarEmail(alumnoParsed.primerNombre, alumnoParsed.primerApellido, dominio)
-        const alumnoPersonaId = await getOrCreatePersonaTx(tx, alumnoNombre, alumnoEmail)
-        if (!alumnoPersonaId) {
-          logger.warn({ alumnoNombre }, 'No se pudo crear/obtener persona alumno')
-          continue
-        }
-        await getOrCreateUsuarioTx(tx, alumnoPersonaId, alumnoEmail, 'estudiante')
+  return cursoIds
+}
 
-        const acudienteParsed = parseNombreCompleto(acudienteNombre)
-        const acudienteEmail = generarEmail(acudienteParsed.primerNombre, acudienteParsed.primerApellido, dominio)
-        const acudientePersonaId = await getOrCreatePersonaTx(tx, acudienteNombre, acudienteEmail)
-        if (!acudientePersonaId) {
-          logger.warn({ acudienteNombre }, 'No se pudo crear/obtener persona acudiente')
-          continue
-        }
-        await getOrCreateUsuarioTx(tx, acudientePersonaId, acudienteEmail, 'acudiente')
+/**
+ * Matricular lista de alumnos en cursos detectados.
+ * Estrategia:
+ *  - Divide lista en Diurna/Sábados por splitIndex.
+ *  - Para Diurna, asigna round-robin entre cursos de jornada D.
+ *  - Para Sábados, asigna round-robin entre cursos de jornada S.
+ */
+async function matricularLista(tx: any, anioId: string, cursoIds: Record<string, string>) {
+  const split = detectarSplitIndex()
+  const cursosD = Object.entries(cursoIds).filter(([k]) => k.endsWith('_D')).map(([, v]) => v)
+  const cursosS = Object.entries(cursoIds).filter(([k]) => k.endsWith('_S')).map(([, v]) => v)
 
-        // Relación estudiante-familiar
-        await getOrCreateEstudianteFamiliarTx(tx, alumnoPersonaId, acudientePersonaId, 'acudiente')
+  let idxD = 0
+  let idxS = 0
 
-        // Profesor opcional
-        if (profesorNombre) {
-          const profParsed = parseNombreCompleto(profesorNombre)
-          const profEmail = generarEmail(profParsed.primerNombre, profParsed.primerApellido, dominio)
-          const profesorPersonaId = await getOrCreatePersonaTx(tx, profesorNombre, profEmail)
-          if (profesorPersonaId) {
-            await getOrCreateUsuarioTx(tx, profesorPersonaId, profEmail, 'docente')
-          }
-        }
+  for (let i = 0; i < LISTA_ALUMNOS.length; i++) {
+    const [alumnoNombre] = LISTA_ALUMNOS[i]
+    const parsed = parseNombreCompleto(alumnoNombre)
+    const email = generarEmail(parsed.primerNombre, parsed.primerApellido, process.env.SEMILLA_PERFILES_DOMINIO ?? 'demo.local')
 
-        logger.info({ alumno: alumnoNombre, acudiente: acudienteNombre, profesor: profesorNombre }, 'Fila semillada')
-      } catch (err) {
-        logger.error({ err, alumnoNombre, acudienteNombre, profesorNombre }, 'Error al semillar fila')
+    // Obtener persona por correo o por nombre
+    let personaId: string | undefined
+    const byEmail = await tx.select({ id: e.persona.id }).from(e.persona).where(eq(e.persona.correo, email)).limit(1)
+    if (byEmail[0]) personaId = byEmail[0].id
+    else {
+      const byName = await tx
+        .select({ id: e.persona.id })
+        .from(e.persona)
+        .where(eq(e.persona.primerNombre, parsed.primerNombre))
+        .where(eq(e.persona.primerApellido, parsed.primerApellido))
+        .limit(1)
+      if (byName[0]) personaId = byName[0].id
+    }
+    if (!personaId) {
+      logger.warn({ alumnoNombre }, 'No se encontró persona para matricular (se omitirá)')
+      continue
+    }
+
+    const esDiurna = i < split
+    const cursoSeleccionado = esDiurna ? cursosD[idxD % Math.max(1, cursosD.length)] : cursosS[idxS % Math.max(1, cursosS.length)]
+    if (!cursoSeleccionado) {
+      logger.warn('No hay cursos disponibles para la jornada', { esDiurna, alumnoNombre })
+      continue
+    }
+
+    // Verificar si ya existe matrícula
+    const existMat = await tx
+      .select({ id: e.matricula.id })
+      .from(e.matricula)
+      .where(eq(e.matricula.anioLectivoId, anioId))
+      .where(eq(e.matricula.estudianteId, personaId))
+      .limit(1)
+
+    if (existMat[0]) {
+      logger.debug({ alumnoNombre }, 'Matrícula existente, se omite')
+    } else {
+      await tx.insert(e.matricula).values({
+        anioLectivoId: anioId,
+        estudianteId: personaId,
+        cursoId: cursoSeleccionado,
+        estado: 'activo',
+        creadoEn: new Date(),
+      }).onConflictDoNothing()
+      if (esDiurna) idxD++
+      else idxS++
+    }
+  }
+}
+
+/**
+ * Asigna docentes a cursos de manera idempotente.
+ * Estrategia (simple y ajustable):
+ *  - Para cada profesor listado, si existe usuario, se le asigna a un curso de su jornada.
+ *  - Si hay asignaturas preferidas (Matemáticas, Español, Inglés), se usarán; sino se toma la primera.
+ */
+async function asignarDocentes(tx: any, anioId: string, cursoIds: Record<string, string>) {
+  const profesores = Array.from(new Set(LISTA_ALUMNOS.map((r) => r[2]).filter(Boolean))) as string[]
+  const preferidas = ['Matemáticas', 'Español', 'Inglés']
+
+  for (const profName of profesores) {
+    if (!profName) continue
+    const parsed = parseNombreCompleto(profName)
+    const email = generarEmail(parsed.primerNombre, parsed.primerApellido, process.env.SEMILLA_PERFILES_DOMINIO ?? 'demo.local')
+
+    const [usuario] = await tx
+      .select({ id: e.usuario.id })
+      .from(e.usuario)
+      .where(eq(e.usuario.correo, email))
+      .limit(1)
+
+    if (!usuario) {
+      logger.warn({ profName }, 'Profesor no encontrado (se omite asignación)')
+      continue
+    }
+
+    // elegir asignatura preferida si existe
+    let asignaturaId: string | undefined
+    for (const p of preferidas) {
+      const [asig] = await tx.select({ id: e.asignatura.id }).from(e.asignatura).where(eq(e.asignatura.nombre, p)).limit(1)
+      if (asig?.id) {
+        asignaturaId = asig.id
+        break
       }
     }
-  })
+    if (!asignaturaId) {
+      const [anyAsig] = await tx.select({ id: e.asignatura.id }).from(e.asignatura).limit(1)
+      asignaturaId = anyAsig?.id
+    }
+    if (!asignaturaId) {
+      logger.warn('No hay asignaturas creadas para asignar', { profName })
+      continue
+    }
 
-  logger.info('Siembra de lista de alumnos finalizada')
+    // Asignar al primer curso disponible (puedes mejorar lógica aquí)
+    const anyCurso = Object.values(cursoIds)[0]
+    if (!anyCurso) continue
+
+    await tx.insert(e.asignacionDocente).values({
+      anioLectivoId: anioId,
+      docenteId: usuario.id,
+      asignaturaId,
+      cursoId: anyCurso,
+    }).onConflictDoNothing()
+  }
 }
+
+/* -------------------------------------------------------------------------- */
+/* ------------------------ semilla principal (existente) ------------------- */
+/* -------------------------------------------------------------------------- */
 
 const PERFILES_DE_PRUEBA = [
   { rol: 'superadmin', nombre: 'Superadministrador', documento: '99000001' },
@@ -374,6 +535,10 @@ async function sembrarPerfilesDePrueba() {
   }
 }
 
+/* -------------------------------------------------------------------------- */
+/* ------------------------------- flujo principal -------------------------- */
+/* -------------------------------------------------------------------------- */
+
 async function sembrar() {
   logger.info('Iniciando siembra de datos...')
 
@@ -436,6 +601,7 @@ async function sembrar() {
     cicloIds[c.codigo] = id
   }
 
+  /* ---------------------- escalas, periodos, areas, asignaturas --------------------- */
   const nivelesEscala = [
     { nivel: 'Bajo', desde: '1.0', hasta: '2.9', orden: 1 },
     { nivel: 'Básico', desde: '3.0', hasta: '3.9', orden: 2 },
@@ -532,37 +698,7 @@ async function sembrar() {
     }
   }
 
-  const nivelesDesc = ['Bajo', 'Básico', 'Alto', 'Superior'] as const
-  const descriptoresBase: Record<string, Record<string, string>> = {
-    Matemáticas: {
-      Bajo: 'Presenta dificultades para comprender y aplicar los conceptos matemáticos básicos del ciclo.',
-      Básico: 'Comprende y aplica los conceptos matemáticos mínimos requeridos para el ciclo.',
-      Alto: 'Comprende y aplica con solidez los conceptos matemáticos, resolviendo situaciones con lógica.',
-      Superior:
-        'Domina con profundidad los conceptos matemáticos y los aplica en situaciones complejas con autonomía.',
-    },
-    Español: {
-      Bajo: 'Presenta dificultades en la comprensión lectora y en la producción textual básica.',
-      Básico: 'Lee y produce textos sencillos con comprensión aceptable del nivel.',
-      Alto: 'Lee con sentido crítico y produce textos coherentes con propiedad lingüística.',
-      Superior:
-        'Demuestra excelente comprensión lectora y produce textos elaborados con riqueza argumentativa.',
-    },
-  }
-  for (const [asignatura, descriptores] of Object.entries(descriptoresBase)) {
-    const asigId = asignaturaIds[asignatura]
-    if (!asigId) continue
-    for (const nivel of nivelesDesc) {
-      const texto = descriptores[nivel]
-      if (texto) {
-        await db
-          .insert(e.descriptor)
-          .values({ asignaturaId: asigId, nivel, texto })
-          .onConflictDoNothing()
-      }
-    }
-  }
-
+  /* ---------------------- conceptos, categorias, cms, configuracion --------------------- */
   const conceptos = ['Matrícula', 'Pensión mensual', 'Certificados y constancias', 'Otros ingresos']
   for (const nombre of conceptos) {
     await db
@@ -716,8 +852,53 @@ async function sembrar() {
     logger.info({ correo: envars.SUPERADMIN_EMAIL }, 'Credenciales del superadministrador creadas')
   })
 
+  /* ------------------- crear cursos, planes, matriculas y asignaciones ------------------ */
+  await conContextoRLS(db, CONTEXTO_SIEMBRA, async (tx) => {
+    const cursoIds = await crearCursosYPlanes(tx, anioId, cicloIds, jornadaIds, asignaturaIds)
+    await matricularLista(tx, anioId, cursoIds)
+    await asignarDocentes(tx, anioId, cursoIds)
+  })
+
   await sembrarPerfilesDePrueba()
-  await sembrarListaAlumnos()
+  await conContextoRLS(db, CONTEXTO_SIEMBRA, async (tx) => {
+    // Si AGORA_SIEMBRA_LISTA=true, sembrar lista completa (personas, usuarios y relaciones)
+    if (process.env['AGORA_SIEMBRA_LISTA'] === 'true') {
+      logger.info('Ejecutando sembrarListaAlumnos() porque AGORA_SIEMBRA_LISTA=true')
+      // la función sembrarListaAlumnos crea/usuario/estudiante_familiar; la llamamos dentro del contexto
+      for (const [alumnoNombre, acudienteNombre, profesorNombre] of LISTA_ALUMNOS) {
+        try {
+          // Alumnos
+          const alumnoParsed = parseNombreCompleto(alumnoNombre)
+          const alumnoEmail = generarEmail(alumnoParsed.primerNombre, alumnoParsed.primerApellido, process.env.SEMILLA_PERFILES_DOMINIO ?? 'demo.local')
+          const alumnoPersonaId = await getOrCreatePersonaTx(tx, alumnoNombre, alumnoEmail)
+          if (alumnoPersonaId) await getOrCreateUsuarioTx(tx, alumnoPersonaId, alumnoEmail, 'estudiante')
+
+          // Acudientes
+          const acudienteParsed = parseNombreCompleto(acudienteNombre)
+          const acudienteEmail = generarEmail(acudienteParsed.primerNombre, acudienteParsed.primerApellido, process.env.SEMILLA_PERFILES_DOMINIO ?? 'demo.local')
+          const acudientePersonaId = await getOrCreatePersonaTx(tx, acudienteNombre, acudienteEmail)
+          if (acudientePersonaId) {
+            await getOrCreateUsuarioTx(tx, acudientePersonaId, acudienteEmail, 'acudiente')
+            if (alumnoPersonaId) await getOrCreateEstudianteFamiliarTx(tx, alumnoPersonaId, acudientePersonaId, 'acudiente')
+          }
+
+          // Profesores opcionales
+          if (profesorNombre) {
+            const profParsed = parseNombreCompleto(profesorNombre)
+            const profEmail = generarEmail(profParsed.primerNombre, profParsed.primerApellido, process.env.SEMILLA_PERFILES_DOMINIO ?? 'demo.local')
+            const profesorPersonaId = await getOrCreatePersonaTx(tx, profesorNombre, profEmail)
+            if (profesorPersonaId) await getOrCreateUsuarioTx(tx, profesorPersonaId, profEmail, 'docente')
+          }
+
+          logger.info({ alumno: alumnoNombre, acudiente: acudienteNombre, profesor: profesorNombre }, 'Fila semillada (lista)')
+        } catch (err) {
+          logger.error({ err, alumnoNombre, acudienteNombre, profesorNombre }, 'Error semillando fila (lista)')
+        }
+      }
+    } else {
+      logger.info('AGORA_SIEMBRA_LISTA != true → no se ejecuta la siembra detallada de la lista (solo se crearon cursos/matriculas/asignaciones).')
+    }
+  })
 
   logger.info('Siembra completada correctamente')
 }
